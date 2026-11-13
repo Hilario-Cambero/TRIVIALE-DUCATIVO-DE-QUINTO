@@ -33,7 +33,7 @@
             100% { transform: rotate(360deg) scale(1); }
         }
         .rolling {
-            animation: diceRoll 0.5s ease-in-out infinite;
+            animation: diceRoll 0.45s ease-in-out infinite;
         }
 
         /* Estilo de botones tipo juego */
@@ -62,7 +62,7 @@
 
         /* Scrollbar personalizada */
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; rounded: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
@@ -70,7 +70,7 @@
 <body class="text-slate-800 select-none">
 
     <!-- CABECERA PRINCIPAL -->
-    <header class="bg-white/80 backdrop-blur-md border-b border-indigo-100 sticky top-0 z-30 shadow-sm">
+    <header class="bg-white/85 backdrop-blur-md border-b border-indigo-100 sticky top-0 z-30 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center text-white text-xl shadow-md">
@@ -78,11 +78,14 @@
                 </div>
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-indigo-950 leading-none">Trivial 5º Primaria</h1>
-                    <p class="text-xs text-slate-500 font-medium">Repaso Interactivo Multidisciplinar</p>
+                    <p class="text-xs text-slate-500 font-medium">Repaso Interactivo Multidisciplinar · Santillana & Macmillan</p>
                 </div>
             </div>
             
             <div class="flex items-center gap-2">
+                <button id="btn-reset-history" onclick="resetSeenQuestions()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5" title="Reiniciar el historial de preguntas vistas">
+                    <i class="fa-solid fa-rotate"></i> <span class="hidden md:inline">Reiniciar preguntas</span>
+                </button>
                 <button id="btn-sound" onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Activar/Desactivar Sonido">
                     <i id="icon-sound" class="fa-solid fa-volume-high"></i>
                 </button>
@@ -96,7 +99,7 @@
     <!-- CONTENEDOR PRINCIPAL DEL JUEGO -->
     <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        <!-- COLUMNA IZQUIERDA: PANEL DE JUGADORES Y QUESITOS (4 columnas en escritorio) -->
+        <!-- COLUMNA IZQUIERDA: PANEL DE JUGADORES Y QUESITOS -->
         <section class="lg:col-span-4 space-y-4 order-2 lg:order-1">
             <!-- Panel de Turno y Dado Virtual -->
             <div class="bg-white rounded-3xl p-5 shadow-lg border border-indigo-50">
@@ -131,21 +134,20 @@
                 <h3 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
                     <i class="fa-solid fa-trophy text-amber-500"></i> Marcador y Quesitos
                 </h3>
-                <div id="players-scoreboard" class="space-y-3">
-                    <!-- Se rellena dinámicamente con JS -->
-                </div>
+                <div id="players-scoreboard" class="space-y-3"></div>
             </div>
 
             <!-- Leyenda de Áreas Activas -->
             <div class="bg-white rounded-3xl p-5 shadow-lg border border-indigo-50">
-                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Áreas de 5º Primaria</h3>
-                <div id="subjects-legend" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
-                    <!-- Se rellena dinámicamente -->
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider">Áreas de 5º Primaria</h3>
+                    <span id="total-questions-badge" class="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full">0 preg.</span>
                 </div>
+                <div id="subjects-legend" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2"></div>
             </div>
         </section>
 
-        <!-- COLUMNA CENTRAL/DERECHA: TABLERO INTERACTIVO SVG (8 columnas en escritorio) -->
+        <!-- COLUMNA CENTRAL/DERECHA: TABLERO INTERACTIVO SVG -->
         <section class="lg:col-span-8 bg-white rounded-3xl p-4 sm:p-6 shadow-xl border border-indigo-50 flex flex-col items-center justify-center order-1 lg:order-2 relative">
             <div class="w-full flex items-center justify-between mb-2 px-2">
                 <span class="text-xs sm:text-sm font-semibold text-slate-500 flex items-center gap-1.5">
@@ -167,17 +169,17 @@
                     <g id="board-cells"></g>
 
                     <!-- Centro del tablero -->
-                    <circle cx="300" cy="300" r="68" fill="url(#centerGrad)" stroke="#ffffff" stroke-width="5" class="shadow-lg"/>
+                    <circle cx="300" cy="300" r="68" fill="url(#centerGrad)" stroke="#ffffff" stroke-width="5"/>
                     <defs>
                         <linearGradient id="centerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stop-color="#4f46e5"/>
                             <stop offset="100%" stop-color="#7c3aed"/>
                         </linearGradient>
                     </defs>
-                    <text x="300" y="293" text-anchor="middle" fill="#ffffff" font-family="Fredoka" font-size="22" font-weight="bold">TRIVIAL</text>
-                    <text x="300" y="317" text-anchor="middle" fill="#c7d2fe" font-family="Inter" font-size="13" font-weight="bold">5º PRIMARIA</text>
+                    <text x="300" y="293" text-anchor="middle" fill="#ffffff" font-family="Fredoka" font-size="22" font-weight="bold" pointer-events="none">TRIVIAL</text>
+                    <text x="300" y="317" text-anchor="middle" fill="#c7d2fe" font-family="Inter" font-size="13" font-weight="bold" pointer-events="none">5º PRIMARIA</text>
 
-                    <!-- Grupo donde se dibujan las fichas de los jugadores -->
+                    <!-- Grupo donde se dibujan las fichas de los jugadores (sin bloquear clics) -->
                     <g id="board-tokens" pointer-events="none"></g>
                 </svg>
             </div>
@@ -206,9 +208,7 @@
                 </div>
                 
                 <!-- Nombres de los jugadores -->
-                <div id="player-names-inputs" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <!-- Generado dinámicamente -->
-                </div>
+                <div id="player-names-inputs" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
             </div>
 
             <!-- Paso 2: Selección de Áreas -->
@@ -217,19 +217,17 @@
                     <label class="block text-sm font-bold text-slate-700">2. Elige las áreas para repasar:</label>
                     <button type="button" onclick="toggleAllSubjects()" class="text-xs font-bold text-indigo-600 hover:underline">Seleccionar / Desmarcar todas</button>
                 </div>
-                <div id="subjects-checkboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <!-- Generado dinámicamente -->
-                </div>
+                <div id="subjects-checkboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
                 <p id="subject-error" class="text-xs text-rose-600 font-semibold mt-2 hidden">
                     <i class="fa-solid fa-circle-exclamation"></i> Debes seleccionar al menos un área para jugar.
                 </p>
             </div>
 
-            <!-- Nota informativa sobre futura integración con GitHub -->
-            <div class="bg-slate-50 rounded-2xl p-3.5 mb-6 border border-slate-200 flex items-start gap-3 text-xs text-slate-600">
+            <!-- Estado de carga de bancos de preguntas -->
+            <div id="bank-status-box" class="bg-slate-50 rounded-2xl p-3.5 mb-6 border border-slate-200 flex items-start gap-3 text-xs text-slate-600">
                 <i class="fa-brands fa-github text-xl text-slate-800 mt-0.5"></i>
-                <div>
-                    <strong class="text-slate-800">Preparado para GitHub:</strong> El banco de preguntas está estructurado por áreas para que puedas ampliarlo o conectarlo con archivos JSON externos en tu repositorio fácilmente.
+                <div id="bank-status-text">
+                    <strong class="text-slate-800">Banco de preguntas listo:</strong> Cargando preguntas curriculares de 5º de Primaria...
                 </div>
             </div>
 
@@ -262,9 +260,7 @@
                     ¿Pregunta?
                 </p>
 
-                <div id="q-options" class="space-y-3 mb-5">
-                    <!-- Opciones A, B, C, D -->
-                </div>
+                <div id="q-options" class="space-y-3 mb-5"></div>
 
                 <!-- Retroalimentación educativa -->
                 <div id="q-feedback" class="hidden p-4 rounded-2xl mb-4">
@@ -292,435 +288,281 @@
         </div>
     </div>
 
-    <!-- Carga de bancos de preguntas externos por área (GitHub) -->
+    <!-- MODAL DE NOTIFICACIÓN RÁPIDA (Sustituye a alert/confirm) -->
+    <div id="toast-banner" class="fixed bottom-5 right-5 z-50 hidden bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-semibold flex items-center gap-2.5 border border-slate-700">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-message">Mensaje</span>
+    </div>
+
+    <!-- Carga de bancos de preguntas externos por área en GitHub -->
     <script src="frances.js"></script>
     <script src="conocimiento.js"></script>
+    <script src="matematicas.js"></script>
+    <script src="lengua.js"></script>
+    <script src="ingles.js"></script>
 
     <script>
         /* ==========================================================================
-           1. DEFINICIÓN DE ÁREAS CURRICULARES (5º DE PRIMARIA)
+           1. DEFINICIÓN DE LAS 5 ÁREAS CURRICULARES DE 5º DE PRIMARIA
            ========================================================================== */
         const SUBJECTS = {
             matematicas: {
                 id: 'matematicas',
                 name: 'Matemáticas',
+                short: 'Mates',
                 color: '#3b82f6', // Azul
-                bgLight: 'bg-blue-50',
-                textCol: 'text-blue-700',
-                borderCol: 'border-blue-200',
+                bgLight: '#eff6ff',
                 icon: 'fa-calculator'
             },
             lengua: {
                 id: 'lengua',
-                name: 'Lengua Castellana',
+                name: 'Lengua Castellana y Literatura',
+                short: 'Lengua',
                 color: '#ef4444', // Rojo
-                bgLight: 'bg-red-50',
-                textCol: 'text-red-700',
-                borderCol: 'border-red-200',
+                bgLight: '#fef2f2',
                 icon: 'fa-book-open'
             },
             conocimiento: {
                 id: 'conocimiento',
                 name: 'Conocimiento del Medio',
+                short: 'C. Medio',
                 color: '#10b981', // Verde
-                bgLight: 'bg-emerald-50',
-                textCol: 'text-emerald-700',
-                borderCol: 'border-emerald-200',
+                bgLight: '#ecfdf5',
                 icon: 'fa-earth-europe'
             },
             ingles: {
                 id: 'ingles',
-                name: 'Inglés (English)',
-                color: '#f59e0b', // Amarillo/Ámbar
-                bgLight: 'bg-amber-50',
-                textCol: 'text-amber-700',
-                borderCol: 'border-amber-200',
+                name: 'Inglés',
+                short: 'Inglés',
+                color: '#f59e0b', // Ámbar / Amarillo
+                bgLight: '#fffbeb',
                 icon: 'fa-language'
             },
             frances: {
                 id: 'frances',
-                name: 'Francés (Français)',
+                name: 'Francés',
+                short: 'Francés',
                 color: '#8b5cf6', // Morado
-                bgLight: 'bg-purple-50',
-                textCol: 'text-purple-700',
-                borderCol: 'border-purple-200',
-                icon: 'fa-tower-observation'
+                bgLight: '#f5f3ff',
+                icon: 'fa-flag'
             }
         };
 
         /* ==========================================================================
-           2. BANCO DE PREGUNTAS DE 5º DE PRIMARIA
-           Combina las preguntas base con los archivos externos de cada área
-           (ej. frances.js, matematicas.js, lengua.js, conocimiento.js, ingles.js)
+           2. BANCO DE RESPALDO INTEGRADO (por si se ejecuta sin archivos .js externos)
            ========================================================================== */
-        const DEFAULT_QUESTION_BANK = {
+        const FALLBACK_BANK = {
             matematicas: [
-                {
-                    q: "¿Cómo se llama el triángulo que tiene todos sus lados iguales?",
-                    options: ["Isósceles", "Equilátero", "Escaleno", "Rectángulo"],
-                    answer: 1,
-                    explanation: "El triángulo equilátero tiene sus 3 lados y sus 3 ángulos iguales (60º cada uno)."
-                },
-                {
-                    q: "Si una pizza se divide en 8 partes iguales y te comes 3, ¿qué fracción queda?",
-                    options: ["3/8", "5/8", "8/3", "5/3"],
-                    answer: 1,
-                    explanation: "Si había 8/8 y te comes 3/8, quedan 8 - 3 = 5 octavos (5/8)."
-                },
-                {
-                    q: "¿Cuántos metros son 3,5 kilómetros?",
-                    options: ["350 metros", "3.500 metros", "35.000 metros", "35 metros"],
-                    answer: 1,
-                    explanation: "Para pasar de kilómetros a metros multiplicamos por 1.000: 3,5 × 1.000 = 3.500 m."
-                },
-                {
-                    q: "¿Cuál es el resultado de la operación combinada: 10 + 5 × 2?",
-                    options: ["30", "20", "25", "17"],
-                    answer: 1,
-                    explanation: "Según la jerarquía de operaciones, primero se hace la multiplicación (5 × 2 = 10) y luego la suma (10 + 10 = 20)."
-                },
-                {
-                    q: "¿Qué número decimal corresponde a la fracción 7/100?",
-                    options: ["0,7", "0,07", "7,00", "0,007"],
-                    answer: 1,
-                    explanation: "Siete centésimas se escribe 0,07 (dos cifras decimales)."
-                }
+                { q: "¿Cuál es el resultado de la operación combinada: 24 − 6 × 3 + 2?", options: ["56", "8", "4", "12"], answer: 1, explanation: "Primero multiplicamos: 6 × 3 = 18. Luego de izquierda a derecha: 24 − 18 + 2 = 8." },
+                { q: "¿Cuál de los siguientes números es primo?", options: ["15", "21", "23", "27"], answer: 2, explanation: "23 solo es divisible por 1 y por sí mismo." },
+                { q: "Calcula los 3/5 de 40 alumnos.", options: ["15 alumnos", "24 alumnos", "20 alumnos", "30 alumnos"], answer: 1, explanation: "40 : 5 = 8; y 8 × 3 = 24 alumnos." }
             ],
             lengua: [
-                {
-                    q: "¿Qué tipo de palabra es 'rápidamente' según su acentuación?",
-                    options: ["Aguda", "Llana", "Esdrújula", "Sobresdrújula"],
-                    answer: 2,
-                    explanation: "Los adverbios terminados en -mente conservan la tilde del adjetivo original ('rápida' es esdrújula)."
-                },
-                {
-                    q: "En la oración 'Los alumnos estudian mucho', ¿cuál es el núcleo del predicado?",
-                    options: ["Alumnos", "Los", "Estudian", "Mucho"],
-                    answer: 2,
-                    explanation: "El núcleo del predicado siempre es el verbo conjugado: 'estudian'."
-                },
-                {
-                    q: "¿Qué recurso literario consiste en atribuir cualidades humanas a animales u objetos?",
-                    options: ["Metáfora", "Personificación", "Comparación", "Hipérbole"],
-                    answer: 1,
-                    explanation: "La personificación da características humanas a seres inanimados o animales (ej. 'el viento susurraba')."
-                },
-                {
-                    q: "¿Cuál de estas palabras es un determinante posesivo?",
-                    options: ["Aquel", "Nuestros", "Varios", "Tres"],
-                    answer: 1,
-                    explanation: "'Nuestros' indica pertenencia o posesión respecto a un sustantivo."
-                },
-                {
-                    q: "¿Cómo se llaman las palabras que se escriben igual pero tienen distinto significado?",
-                    options: ["Sinónimas", "Antónimas", "Polisémicas", "Derivadas"],
-                    answer: 2,
-                    explanation: "Las palabras polisémicas tienen varios significados, como 'banco' (asiento, entidad financiera o grupo de peces)."
-                }
+                { q: "¿Cuándo llevan tilde las palabras esdrújulas?", options: ["Solo si terminan en vocal", "Siempre llevan tilde", "Nunca llevan tilde", "Si acaban en -n o -s"], answer: 1, explanation: "Todas las palabras esdrújulas y sobresdrújulas llevan tilde siempre." },
+                { q: "¿Qué recurso literario aparece en 'Sus dientes son perlas blancas'?", options: ["Comparación", "Metáfora", "Hipérbole", "Aliteración"], answer: 1, explanation: "La metáfora identifica un término real (dientes) con uno imaginario (perlas)." },
+                { q: "¿Cuál de las lenguas de España NO procede del latín?", options: ["El gallego", "El catalán", "El euskera", "El castellano"], answer: 2, explanation: "El euskera es una lengua prerromana que no deriva del latín." }
             ],
             conocimiento: [
-                {
-                    q: "¿Qué aparato del cuerpo humano se encarga de transformar los alimentos en nutrientes?",
-                    options: ["Aparato respiratorio", "Aparato digestivo", "Aparato circulatorio", "Aparato excretor"],
-                    answer: 1,
-                    explanation: "El aparato digestivo realiza la digestión para obtener los nutrientes necesarios para nuestras células."
-                },
-                {
-                    q: "¿Cuál es el pico más alto de la Península Ibérica?",
-                    options: ["Teide", "Aneto", "Mulhacén", "Peñalara"],
-                    answer: 2,
-                    explanation: "El Mulhacén (3.479 m) en Sierra Nevada es el más alto de la Península. El Teide es el más alto de toda España."
-                },
-                {
-                    q: "¿Qué función cumplen las raíces de una planta?",
-                    options: ["Realizar la fotosíntesis", "Absorber agua y sales minerales", "Producir semillas", "Atraer insectos"],
-                    answer: 1,
-                    explanation: "Las raíces fijan la planta al suelo y absorben agua y sales minerales (savia bruta)."
-                },
-                {
-                    q: "¿Qué planeta del Sistema Solar es conocido como el 'planeta rojo'?",
-                    options: ["Venus", "Júpiter", "Marte", "Saturno"],
-                    answer: 2,
-                    explanation: "Marte tiene un color rojizo debido al óxido de hierro presente en su superficie."
-                },
-                {
-                    q: "¿En qué edad de la Historia se produjo el descubrimiento de América en 1492?",
-                    options: ["Edad Antigua", "Edad Media", "Edad Moderna", "Edad Contemporánea"],
-                    answer: 2,
-                    explanation: "El año 1492 marca el fin de la Edad Media y el inicio de la Edad Moderna."
-                }
+                { q: "¿Cuáles son las tres funciones vitales de todos los seres vivos?", options: ["Nacer, crecer y morir", "Nutrición, relación y reproducción", "Respirar, comer y dormir", "Moverse y sentir"], answer: 1, explanation: "Todos los seres vivos realizan nutrición, relación y reproducción." },
+                { q: "¿Cuál es el pico más alto de España?", options: ["El Mulhacén", "El Aneto", "El Teide", "El Torre Cerredo"], answer: 2, explanation: "El Teide (3.715 m), en Tenerife, es el pico más alto de España." },
+                { q: "¿Qué proceso permite a las plantas fabricar su alimento con la luz del Sol?", options: ["Respiración", "Fotosíntesis", "Polinización", "Germinación"], answer: 1, explanation: "Mediante la fotosíntesis las plantas producen materia orgánica y liberan oxígeno." }
             ],
             ingles: [
-                {
-                    q: "How do you say '¿Qué hora es?' in English?",
-                    options: ["What time is it?", "Where are you?", "How old are you?", "What day is today?"],
-                    answer: 0,
-                    explanation: "'What time is it?' es la forma correcta de preguntar la hora en inglés."
-                },
-                {
-                    q: "Complete the sentence: 'She _____ playing football in the park now.'",
-                    options: ["am", "is", "are", "be"],
-                    answer: 1,
-                    explanation: "Con el pronombre 'She' (3ª persona del singular) usamos 'is' en Present Continuous."
-                },
-                {
-                    q: "Which of these animals is a mammal that lives in the ocean?",
-                    options: ["Shark", "Dolphin", "Octopus", "Crab"],
-                    answer: 1,
-                    explanation: "The dolphin (delfín) is a marine mammal; sharks are fish."
-                },
-                {
-                    q: "What is the opposite of 'expensive'?",
-                    options: ["Big", "Fast", "Cheap", "Heavy"],
-                    answer: 2,
-                    explanation: "'Expensive' significa caro, y su contrario es 'cheap' (barato)."
-                },
-                {
-                    q: "Translate into English: 'Hay tres libros encima de la mesa'.",
-                    options: ["There is three books on the table", "There are three books on the table", "There are three books under the table", "They are three books in the table"],
-                    answer: 1,
-                    explanation: "Para plural usamos 'There are' y para indicar 'encima de' usamos 'on'."
-                }
+                { q: "Complete: 'My brother _____ to school by bus every morning.'", options: ["go", "goes", "going", "is go"], answer: 1, explanation: "En 3ª persona del singular en Present Simple añadimos '-es': 'goes'." },
+                { q: "What is the Past Simple of the irregular verb 'go'?", options: ["goed", "went", "gone", "going"], answer: 1, explanation: "El pasado simple de 'go' es 'went'." },
+                { q: "Choose the comparative: 'An elephant is _____ than a mouse.'", options: ["big", "bigger", "biggest", "more big"], answer: 1, explanation: "'Bigger than' es el comparativo correcto." }
             ],
             frances: [
-                {
-                    q: "¿Cómo se dice 'Buenos días / Hola' en francés?",
-                    options: ["Bonsoir", "Bonjour", "Au revoir", "Merci"],
-                    answer: 1,
-                    explanation: "'Bonjour' se utiliza para saludar durante el día en francés."
-                },
-                {
-                    q: "¿Cómo se dice 'la habitación' en francés?",
-                    options: ["La cuisine", "La chambre", "Le salon", "Le toit"],
-                    answer: 1,
-                    explanation: "'La chambre' significa la habitación o dormitorio."
-                },
-                {
-                    q: "¿Qué significa la preposición 'SOUS' en español?",
-                    options: ["Encima", "Debajo", "Dentro", "Detrás"],
-                    answer: 1,
-                    explanation: "'SOUS' significa debajo (ej. Le chat est sous la table)."
-                },
-                {
-                    q: "¿Qué significa la preposición 'DEVANT' en español?",
-                    options: ["Detrás", "Delante", "Al lado", "Entre"],
-                    answer: 1,
-                    explanation: "'DEVANT' significa delante."
-                },
-                {
-                    q: "¿Cómo se dice 'encima / sobre' en francés?",
-                    options: ["SOUS", "SUR", "DANS", "ENTRE"],
-                    answer: 1,
-                    explanation: "'SUR' significa encima o sobre."
-                },
-                {
-                    q: "¿Cómo se dice 'el ordenador' en francés?",
-                    options: ["Le clavier", "L'ordinateur", "La souris", "L'écran"],
-                    answer: 1,
-                    explanation: "'L'ordinateur' significa el ordenador."
-                },
-                {
-                    q: "¿Qué significa 'La souris' en informática?",
-                    options: ["El teclado", "El ratón del ordenador", "La pantalla", "La tablet"],
-                    answer: 1,
-                    explanation: "'La souris' significa el ratón."
-                },
-                {
-                    q: "Conjuga el verbo 'parler' (hablar): 'Nous _____ français'.",
-                    options: ["parlez", "parlons", "parlent", "parle"],
-                    answer: 1,
-                    explanation: "Con 'Nous' los verbos regulares en -ER terminan en '-ons': Nous parlons."
-                },
-                {
-                    q: "Conjuga el verbo 'parler': 'Tu _____ très bien'.",
-                    options: ["parle", "parles", "parlez", "parlent"],
-                    answer: 1,
-                    explanation: "Con 'Tu' los verbos regulares en -ER terminan en '-es': Tu parles."
-                },
-                {
-                    q: "¿Qué mueble es 'L'armoire'?",
-                    options: ["La cama", "El armario", "El sofá", "La silla"],
-                    answer: 1,
-                    explanation: "'L'armoire' significa el armario."
-                },
-                {
-                    q: "¿Qué estancia de la casa es 'La cuisine'?",
-                    options: ["El salón", "La cocina", "El cuarto de baño", "El jardín"],
-                    answer: 1,
-                    explanation: "'La cuisine' es la cocina."
-                },
-                {
-                    q: "¿Cómo se dice 'al lado (de)' en francés?",
-                    options: ["À CÔTÉ (de)", "DERRIÈRE", "DANS", "ENTRE"],
-                    answer: 0,
-                    explanation: "'À côté (de)' significa al lado de."
-                },
-                {
-                    q: "Completa: 'Le chat est _____ la boîte' (dentro de la caja).",
-                    options: ["sur", "dans", "sous", "devant"],
-                    answer: 1,
-                    explanation: "'Dans' significa dentro o en."
-                },
-                {
-                    q: "¿Qué objeto es 'Le clavier'?",
-                    options: ["La pantalla", "El teclado", "El ratón", "La lámpara"],
-                    answer: 1,
-                    explanation: "'Le clavier' es el teclado."
-                },
-                {
-                    q: "Conjuga: 'Ils _____ dans le jardin' (jouer - jugar).",
-                    options: ["joue", "jouons", "jouent", "jouez"],
-                    answer: 2,
-                    explanation: "Con 'Ils / Elles' la terminación es '-ent': Ils jouent."
-                }
+                { q: "¿Cómo se dice 'la habitación / el dormitorio' en francés?", options: ["La cuisine", "La chambre", "Le salon", "Le toit"], answer: 1, explanation: "'La chambre' significa la habitación o dormitorio." },
+                { q: "Completa: 'Le chat est _____ la boîte' (El gato está DENTRO de la caja).", options: ["sur", "dans", "sous", "devant"], answer: 1, explanation: "'Dans' significa dentro." },
+                { q: "Conjuga el verbo 'parler': 'Nous _____ français en classe'.", options: ["parlez", "parlons", "parlent", "parle"], answer: 1, explanation: "Con 'Nous' la terminación regular es '-ons': 'Nous parlons'." }
             ]
         };
 
-        // Fusionar bancos externos (como frances.js) con el banco por defecto
-        const QUESTION_BANK = {
-            matematicas: (window.QUESTION_BANK && window.QUESTION_BANK.matematicas) || DEFAULT_QUESTION_BANK.matematicas,
-            lengua: (window.QUESTION_BANK && window.QUESTION_BANK.lengua) || DEFAULT_QUESTION_BANK.lengua,
-            conocimiento: (window.QUESTION_BANK && window.QUESTION_BANK.conocimiento) || DEFAULT_QUESTION_BANK.conocimiento,
-            ingles: (window.QUESTION_BANK && window.QUESTION_BANK.ingles) || DEFAULT_QUESTION_BANK.ingles,
-            frances: (window.QUESTION_BANK && window.QUESTION_BANK.frances) || DEFAULT_QUESTION_BANK.frances
-        };
+        // Devuelve el banco activo de cada asignatura (prioriza los .js externos cargados en window.QUESTION_BANK)
+        function getSubjectQuestions(subjectId) {
+            if (window.QUESTION_BANK && Array.isArray(window.QUESTION_BANK[subjectId]) && window.QUESTION_BANK[subjectId].length > 0) {
+                return window.QUESTION_BANK[subjectId];
+            }
+            return FALLBACK_BANK[subjectId] || [];
+        }
 
         /* ==========================================================================
-           3. ESTADO GLOBAL DEL JUEGO Y CONFIGURACIÓN
+           3. ESTADO DEL JUEGO Y SISTEMA ALEATORIO SIN REPETICIÓN ENTRE PARTIDAS
            ========================================================================== */
-        const PLAYER_COLORS = [
-            { name: 'Equipo Azul', hex: '#2563eb', bg: 'bg-blue-600' },
-            { name: 'Equipo Rojo', hex: '#dc2626', bg: 'bg-red-600' },
-            { name: 'Equipo Verde', hex: '#059669', bg: 'bg-emerald-600' },
-            { name: 'Equipo Naranja', hex: '#d97706', bg: 'bg-amber-600' }
-        ];
+        const PLAYER_COLORS = ['#2563eb', '#dc2626', '#059669', '#d97706'];
+        const BOARD_SIZE = 24;
+        const STORAGE_KEY_SEEN = 'trivial5_seen_questions_v1';
 
-        let gameState = {
+        let state = {
+            playerCount: 2,
             players: [],
             activeSubjects: ['matematicas', 'lengua', 'conocimiento', 'ingles', 'frances'],
             currentPlayerIdx: 0,
             diceValue: 0,
-            phase: 'ROLL', // 'ROLL', 'MOVE', 'QUESTION', 'GAMEOVER'
-            boardCells: [],
+            phase: 'ROLL', // 'ROLL' | 'MOVE' | 'QUESTION'
             validMoves: [],
+            boardCells: [],
             currentQuestion: null,
-            currentCellIsWedge: false,
+            currentCell: null,
             soundEnabled: true,
-            usedQuestions: {} // Evita repetir preguntas hasta agotar el banco
+            seenQuestions: loadSeenQuestions()
         };
 
-        let selectedPlayerCount = 2;
+        function loadSeenQuestions() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY_SEEN);
+                return saved ? JSON.parse(saved) : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveSeenQuestions() {
+            try {
+                localStorage.setItem(STORAGE_KEY_SEEN, JSON.stringify(state.seenQuestions));
+            } catch (e) {
+                // Ignorar si localStorage está restringido
+            }
+        }
+
+        function resetSeenQuestions() {
+            state.seenQuestions = {};
+            saveSeenQuestions();
+            showToast('Historial reiniciado: todas las preguntas vuelven a estar disponibles.');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-banner');
+            document.getElementById('toast-message').textContent = msg;
+            toast.classList.remove('hidden');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3500);
+        }
 
         /* ==========================================================================
            4. EFECTOS DE SONIDO CON TONE.JS
            ========================================================================== */
         function playSound(type) {
-            if (!gameState.soundEnabled) return;
+            if (!state.soundEnabled || typeof Tone === 'undefined') return;
             try {
-                if (Tone.context.state !== 'running') Tone.start();
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
                 const synth = new Tone.Synth().toDestination();
-                
+                const now = Tone.now();
                 if (type === 'dice') {
-                    synth.triggerAttackRelease("C5", "32n");
+                    synth.triggerAttackRelease('C5', '16n', now);
                 } else if (type === 'move') {
-                    synth.triggerAttackRelease("E5", "16n");
+                    synth.triggerAttackRelease('E5', '16n', now);
                 } else if (type === 'correct') {
-                    const now = Tone.now();
-                    synth.triggerAttackRelease("C5", "16n", now);
-                    synth.triggerAttackRelease("E5", "16n", now + 0.1);
-                    synth.triggerAttackRelease("G5", "8n", now + 0.2);
+                    synth.triggerAttackRelease('C5', '16n', now);
+                    synth.triggerAttackRelease('E5', '16n', now + 0.1);
+                    synth.triggerAttackRelease('G5', '8n', now + 0.2);
                 } else if (type === 'wrong') {
-                    const now = Tone.now();
-                    synth.triggerAttackRelease("A3", "16n", now);
-                    synth.triggerAttackRelease("F3", "8n", now + 0.15);
-                } else if (type === 'win') {
-                    const now = Tone.now();
-                    synth.triggerAttackRelease("C5", "16n", now);
-                    synth.triggerAttackRelease("E5", "16n", now + 0.1);
-                    synth.triggerAttackRelease("G5", "16n", now + 0.2);
-                    synth.triggerAttackRelease("C6", "4n", now + 0.3);
+                    synth.triggerAttackRelease('E4', '16n', now);
+                    synth.triggerAttackRelease('C4', '8n', now + 0.15);
+                } else if (type === 'wedge') {
+                    synth.triggerAttackRelease('C5', '16n', now);
+                    synth.triggerAttackRelease('E5', '16n', now + 0.08);
+                    synth.triggerAttackRelease('G5', '16n', now + 0.16);
+                    synth.triggerAttackRelease('C6', '4n', now + 0.24);
                 }
             } catch (e) {
-                console.warn("Audio no disponible:", e);
+                // Evitar fallos si el navegador bloquea el audio
             }
         }
 
         function toggleSound() {
-            gameState.soundEnabled = !gameState.soundEnabled;
+            state.soundEnabled = !state.soundEnabled;
             const icon = document.getElementById('icon-sound');
-            icon.className = gameState.soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-slate-400';
+            icon.className = state.soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-slate-400';
         }
 
         /* ==========================================================================
-           5. LÓGICA DEL MODAL DE CONFIGURACIÓN
+           5. CONFIGURACIÓN INICIAL DE LA PARTIDA
            ========================================================================== */
         function initConfigUI() {
-            setPlayerCount(2);
-            
-            // Renderizar checkboxes de áreas
+            setPlayerCount(state.playerCount);
+            renderSubjectCheckboxes();
+            updateBankStatusBanner();
+        }
+
+        function updateBankStatusBanner() {
+            let total = 0;
+            Object.keys(SUBJECTS).forEach(id => {
+                total += getSubjectQuestions(id).length;
+            });
+            const statusText = document.getElementById('bank-status-text');
+            if (statusText) {
+                statusText.innerHTML = `<strong class="text-slate-800">Banco de preguntas cargado (${total} preguntas en total):</strong> Listo para jugar en modo aleatorio sin repeticiones entre partidas.`;
+            }
+        }
+
+        function setPlayerCount(count) {
+            state.playerCount = count;
+            document.querySelectorAll('.player-count-btn').forEach(btn => {
+                const c = parseInt(btn.dataset.count, 10);
+                if (c === count) {
+                    btn.className = 'player-count-btn py-2.5 rounded-xl font-bold border-2 border-indigo-600 bg-indigo-600 text-white shadow-sm transition';
+                } else {
+                    btn.className = 'player-count-btn py-2.5 rounded-xl font-bold border-2 border-slate-200 bg-white text-slate-600 hover:border-indigo-300 transition';
+                }
+            });
+
+            const container = document.getElementById('player-names-inputs');
+            container.innerHTML = '';
+            const defaultNames = ['Equipo Azul', 'Equipo Rojo', 'Equipo Verde', 'Equipo Naranja'];
+            for (let i = 0; i < count; i++) {
+                const existingName = state.players[i] ? state.players[i].name : defaultNames[i];
+                container.innerHTML += `
+                    <div class="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0" style="background:${PLAYER_COLORS[i]}">${i + 1}</span>
+                        <input type="text" id="player-name-${i}" value="${existingName}" maxlength="18" placeholder="Nombre jugador ${i + 1}" class="w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none">
+                    </div>
+                `;
+            }
+        }
+
+        function renderSubjectCheckboxes() {
             const container = document.getElementById('subjects-checkboxes');
             container.innerHTML = '';
             Object.values(SUBJECTS).forEach(subj => {
-                const isChecked = gameState.activeSubjects.includes(subj.id);
+                const checked = state.activeSubjects.includes(subj.id);
+                const qCount = getSubjectQuestions(subj.id).length;
                 container.innerHTML += `
-                    <label class="flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition select-none ${isChecked ? 'border-indigo-500 bg-indigo-50/50' : 'border-slate-200 hover:bg-slate-50'}" onclick="updateSubjectLabelStyle(this)">
-                        <input type="checkbox" name="subject" value="${subj.id}" ${isChecked ? 'checked' : ''} class="w-5 h-5 accent-indigo-600 rounded">
-                        <span class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm" style="background-color: ${subj.color}">
-                            <i class="fa-solid ${subj.icon}"></i>
-                        </span>
-                        <span class="font-bold text-slate-800 text-sm">${subj.name}</span>
+                    <label class="flex items-center justify-between p-3 rounded-2xl border-2 cursor-pointer transition ${checked ? 'border-indigo-500 bg-indigo-50/40' : 'border-slate-200 bg-white hover:bg-slate-50'}">
+                        <div class="flex items-center gap-2.5">
+                            <input type="checkbox" class="subject-cb w-4 h-4 accent-indigo-600 rounded" value="${subj.id}" ${checked ? 'checked' : ''} onchange="onSubjectCheckboxChange()">
+                            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs" style="background:${subj.color}">
+                                <i class="fa-solid ${subj.icon}"></i>
+                            </span>
+                            <span class="text-sm font-bold text-slate-800">${subj.name}</span>
+                        </div>
+                        <span class="text-[11px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-full border border-slate-200">${qCount}</span>
                     </label>
                 `;
             });
         }
 
-        function updateSubjectLabelStyle(label) {
-            setTimeout(() => {
-                const cb = label.querySelector('input');
-                if (cb.checked) {
-                    label.classList.add('border-indigo-500', 'bg-indigo-50/50');
-                    label.classList.remove('border-slate-200');
-                } else {
-                    label.classList.remove('border-indigo-500', 'bg-indigo-50/50');
-                    label.classList.add('border-slate-200');
-                }
-            }, 10);
+        function onSubjectCheckboxChange() {
+            const selected = Array.from(document.querySelectorAll('.subject-cb:checked')).map(cb => cb.value);
+            state.activeSubjects = selected;
+            document.getElementById('subject-error').classList.toggle('hidden', selected.length > 0);
+            renderSubjectCheckboxes();
         }
 
         function toggleAllSubjects() {
-            const checkboxes = document.querySelectorAll('input[name="subject"]');
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            checkboxes.forEach(cb => {
-                cb.checked = !allChecked;
-                updateSubjectLabelStyle(cb.closest('label'));
-            });
-        }
-
-        function setPlayerCount(count) {
-            selectedPlayerCount = count;
-            document.querySelectorAll('.player-count-btn').forEach(btn => {
-                const c = parseInt(btn.dataset.count);
-                if (c === count) {
-                    btn.className = 'player-count-btn py-2.5 rounded-xl font-bold border-2 border-indigo-600 bg-indigo-600 text-white shadow-md transition';
-                } else {
-                    btn.className = 'player-count-btn py-2.5 rounded-xl font-bold border-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition';
-                }
-            });
-
-            const inputsContainer = document.getElementById('player-names-inputs');
-            inputsContainer.innerHTML = '';
-            for (let i = 0; i < count; i++) {
-                const pColor = PLAYER_COLORS[i];
-                inputsContainer.innerHTML += `
-                    <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                        <span class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0" style="background-color: ${pColor.hex}">
-                            ${i + 1}
-                        </span>
-                        <input type="text" id="player-name-${i}" value="Jugador ${i + 1}" maxlength="16"
-                            class="w-full bg-transparent font-semibold text-slate-800 text-sm focus:outline-none" placeholder="Nombre...">
-                    </div>
-                `;
+            const allIds = Object.keys(SUBJECTS);
+            if (state.activeSubjects.length === allIds.length) {
+                state.activeSubjects = [];
+            } else {
+                state.activeSubjects = [...allIds];
             }
+            document.getElementById('subject-error').classList.toggle('hidden', state.activeSubjects.length > 0);
+            renderSubjectCheckboxes();
         }
 
         function openConfigModal() {
@@ -728,102 +570,112 @@
             document.getElementById('victory-modal').classList.remove('flex');
             document.getElementById('config-modal').classList.remove('hidden');
             document.getElementById('config-modal').classList.add('flex');
+            initConfigUI();
+        }
+
+        function startGame() {
+            if (state.activeSubjects.length === 0) {
+                document.getElementById('subject-error').classList.remove('hidden');
+                return;
+            }
+
+            // Crear jugadores
+            state.players = [];
+            for (let i = 0; i < state.playerCount; i++) {
+                const input = document.getElementById(`player-name-${i}`);
+                const name = (input && input.value.trim()) ? input.value.trim() : `Jugador ${i + 1}`;
+                state.players.push({
+                    id: i,
+                    name: name,
+                    color: PLAYER_COLORS[i],
+                    position: 0,
+                    wedges: [] // IDs de áreas conseguidas
+                });
+            }
+
+            state.currentPlayerIdx = 0;
+            state.diceValue = 0;
+            state.phase = 'ROLL';
+            state.validMoves = [];
+
+            buildBoardData();
+            renderBoard();
+            renderScoreboard();
+            renderLegend();
+            updateTurnUI();
+
+            document.getElementById('config-modal').classList.add('hidden');
+            document.getElementById('config-modal').classList.remove('flex');
+            document.getElementById('btn-roll').disabled = false;
+            document.getElementById('btn-roll').classList.remove('opacity-50', 'cursor-not-allowed');
         }
 
         /* ==========================================================================
-           6. GENERACIÓN DEL TABLERO CIRCULAR DE TRIVIAL (SVG)
+           6. CONSTRUCCIÓN Y RENDERIZADO DEL TABLERO CIRCULAR SVG
            ========================================================================== */
         function buildBoardData() {
-            // Anillo exterior de 24 casillas
-            const totalCells = 24;
-            const radius = 250;
-            const cx = 300, cy = 300;
-            const cells = [];
+            state.boardCells = [];
+            const subjects = state.activeSubjects;
+            // Repartimos las casillas de quesito (estrella) de forma equilibrada
+            const wedgePositions = new Set();
+            const step = Math.floor(BOARD_SIZE / subjects.length);
+            for (let i = 0; i < subjects.length; i++) {
+                wedgePositions.add((i * step) % BOARD_SIZE);
+            }
 
-            // Posiciones de quesitos distribuidas uniformemente (cada 4 casillas = 6 quesitos)
-            const wedgeIndices = [0, 4, 8, 12, 16, 20];
-            const activeSubjList = gameState.activeSubjects;
+            for (let i = 0; i < BOARD_SIZE; i++) {
+                const angle = (i * (360 / BOARD_SIZE) - 90) * (Math.PI / 180);
+                const radius = 250;
+                const cx = 300 + radius * Math.cos(angle);
+                const cy = 300 + radius * Math.sin(angle);
+                const subjectId = subjects[i % subjects.length];
+                const isWedge = wedgePositions.has(i);
 
-            for (let i = 0; i < totalCells; i++) {
-                const angle = (i * 2 * Math.PI / totalCells) - (Math.PI / 2);
-                const x = cx + radius * Math.cos(angle);
-                const y = cy + radius * Math.sin(angle);
-                
-                // Asignar área ciclando sobre las áreas seleccionadas por el docente/alumno
-                const subjectId = activeSubjList[i % activeSubjList.length];
-                const isWedge = wedgeIndices.includes(i);
-
-                cells.push({
+                state.boardCells.push({
                     index: i,
-                    x: x,
-                    y: y,
-                    subjectId: subjectId,
-                    isWedge: isWedge
+                    cx,
+                    cy,
+                    subjectId,
+                    isWedge
                 });
             }
-            gameState.boardCells = cells;
         }
 
         function renderBoard() {
             const cellsGroup = document.getElementById('board-cells');
             cellsGroup.innerHTML = '';
 
-            // Dibujar radios decorativos hacia los quesitos
-            gameState.boardCells.forEach(cell => {
-                if (cell.isWedge) {
-                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                    line.setAttribute("x1", 300);
-                    line.setAttribute("y1", 300);
-                    line.setAttribute("x2", cell.x);
-                    line.setAttribute("y2", cell.y);
-                    line.setAttribute("stroke", "#cbd5e1");
-                    line.setAttribute("stroke-width", "12");
-                    line.setAttribute("stroke-linecap", "round");
-                    cellsGroup.appendChild(line);
-                }
-            });
-
-            // Dibujar las 24 casillas
-            gameState.boardCells.forEach(cell => {
+            state.boardCells.forEach(cell => {
                 const subj = SUBJECTS[cell.subjectId];
-                const isValid = gameState.validMoves.includes(cell.index);
+                const isValid = state.phase === 'MOVE' && state.validMoves.includes(cell.index);
+                const r = cell.isWedge ? 23 : 18;
 
-                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                g.setAttribute("transform", `translate(${cell.x}, ${cell.y})`);
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 if (isValid) {
-                    g.classList.add('valid-move');
-                    g.style.cursor = 'pointer';
-                    g.setAttribute("pointer-events", "all");
-                    g.onclick = function(e) {
-                        if (e) e.stopPropagation();
-                        selectTargetCell(cell.index);
-                    };
+                    g.setAttribute('class', 'valid-move');
+                    g.setAttribute('pointer-events', 'all');
+                    g.onclick = () => selectTargetCell(cell.index);
                 }
 
-                // Círculo de la casilla (más grande si es quesito)
-                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                circle.setAttribute("r", cell.isWedge ? 25 : 19);
-                circle.setAttribute("fill", subj.color);
-                circle.setAttribute("stroke", isValid ? "#facc15" : "#ffffff");
-                circle.setAttribute("stroke-width", isValid ? "5" : "3");
-                if (isValid) {
-                    circle.setAttribute("pointer-events", "all");
-                    circle.onclick = function(e) {
-                        if (e) e.stopPropagation();
-                        selectTargetCell(cell.index);
-                    };
-                }
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', cell.cx);
+                circle.setAttribute('cy', cell.cy);
+                circle.setAttribute('r', r);
+                circle.setAttribute('fill', subj.color);
+                circle.setAttribute('stroke', isValid ? '#facc15' : '#ffffff');
+                circle.setAttribute('stroke-width', isValid ? '5' : '3');
                 g.appendChild(circle);
 
-                // Si es casilla de quesito, dibujar una estrella blanca en el centro
                 if (cell.isWedge) {
-                    const star = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    star.setAttribute("text-anchor", "middle");
-                    star.setAttribute("dy", "5");
-                    star.setAttribute("fill", "#ffffff");
-                    star.setAttribute("font-size", "16");
-                    star.setAttribute("pointer-events", "none");
-                    star.textContent = "★";
+                    const star = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    star.setAttribute('x', cell.cx);
+                    star.setAttribute('y', cell.cy + 6);
+                    star.setAttribute('text-anchor', 'middle');
+                    star.setAttribute('fill', '#ffffff');
+                    star.setAttribute('font-size', '18');
+                    star.setAttribute('font-weight', 'bold');
+                    star.setAttribute('pointer-events', 'none');
+                    star.textContent = '★';
                     g.appendChild(star);
                 }
 
@@ -837,329 +689,159 @@
             const tokensGroup = document.getElementById('board-tokens');
             tokensGroup.innerHTML = '';
 
-            // Agrupar jugadores por casilla para evitar que se tapen si coinciden
+            // Agrupar jugadores que están en la misma casilla para desplazar sus fichas ligeramente
             const cellOccupants = {};
-            gameState.players.forEach((p, idx) => {
-                if (!cellOccupants[p.position]) cellOccupants[p.position] = [];
-                cellOccupants[p.position].push({ player: p, idx });
+            state.players.forEach(p => {
+                cellOccupants[p.position] = cellOccupants[p.position] || [];
+                cellOccupants[p.position].push(p);
             });
+
+            const offsets = [
+                [-7, -7],
+                [7, -7],
+                [-7, 7],
+                [7, 7]
+            ];
 
             Object.entries(cellOccupants).forEach(([posStr, occupants]) => {
-                const cell = gameState.boardCells[parseInt(posStr)];
+                const pos = parseInt(posStr, 10);
+                const cell = state.boardCells[pos];
                 if (!cell) return;
 
-                occupants.forEach((occ, i) => {
-                    // Pequeño desplazamiento si hay varios jugadores en la misma casilla
-                    const offsetAngle = (i * 2 * Math.PI) / occupants.length;
-                    const offsetDist = occupants.length > 1 ? 9 : 0;
-                    const tx = cell.x + offsetDist * Math.cos(offsetAngle);
-                    const ty = cell.y + offsetDist * Math.sin(offsetAngle);
+                occupants.forEach((player, idx) => {
+                    const [ox, oy] = occupants.length === 1 ? [0, 0] : offsets[idx % offsets.length];
+                    const tx = cell.cx + ox;
+                    const ty = cell.cy + oy;
 
-                    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-                    g.setAttribute("transform", `translate(${tx}, ${ty})`);
-                    g.style.transition = "transform 0.4s ease";
+                    const token = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    token.setAttribute('cx', tx);
+                    token.setAttribute('cy', ty);
+                    token.setAttribute('r', 10);
+                    token.setAttribute('fill', player.color);
+                    token.setAttribute('stroke', '#ffffff');
+                    token.setAttribute('stroke-width', '2.5');
+                    token.setAttribute('pointer-events', 'none');
+                    tokensGroup.appendChild(token);
 
-                    const tokenCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                    tokenCircle.setAttribute("r", "12");
-                    tokenCircle.setAttribute("fill", occ.player.color);
-                    tokenCircle.setAttribute("stroke", "#ffffff");
-                    tokenCircle.setAttribute("stroke-width", "2.5");
-                    g.appendChild(tokenCircle);
-
-                    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    label.setAttribute("text-anchor", "middle");
-                    label.setAttribute("dy", "4");
-                    label.setAttribute("fill", "#ffffff");
-                    label.setAttribute("font-family", "Fredoka");
-                    label.setAttribute("font-size", "11");
-                    label.setAttribute("font-weight", "bold");
-                    label.textContent = occ.idx + 1;
-                    g.appendChild(label);
-
-                    tokensGroup.appendChild(g);
+                    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    label.setAttribute('x', tx);
+                    label.setAttribute('y', ty + 3.5);
+                    label.setAttribute('text-anchor', 'middle');
+                    label.setAttribute('fill', '#ffffff');
+                    label.setAttribute('font-size', '10');
+                    label.setAttribute('font-weight', 'bold');
+                    label.setAttribute('pointer-events', 'none');
+                    label.textContent = player.id + 1;
+                    tokensGroup.appendChild(label);
                 });
             });
         }
 
         /* ==========================================================================
-           7. INICIO Y FLUJO DE LA PARTIDA
+           7. MECÁNICA DEL DADO Y MOVIMIENTO
            ========================================================================== */
-        function startGame() {
-            const checkedBoxes = document.querySelectorAll('input[name="subject"]:checked');
-            const selectedSubjs = Array.from(checkedBoxes).map(cb => cb.value);
-
-            if (selectedSubjs.length === 0) {
-                document.getElementById('subject-error').classList.remove('hidden');
-                return;
-            }
-            document.getElementById('subject-error').classList.add('hidden');
-
-            gameState.activeSubjects = selectedSubjs;
-            gameState.players = [];
-            gameState.usedQuestions = {};
-
-            for (let i = 0; i < selectedPlayerCount; i++) {
-                const nameInput = document.getElementById(`player-name-${i}`).value.trim();
-                gameState.players.push({
-                    id: i,
-                    name: nameInput || `Jugador ${i + 1}`,
-                    color: PLAYER_COLORS[i].hex,
-                    position: (i * 4) % 24, // Salida distribuida en casillas de quesito
-                    wedges: [] // IDs de las áreas ganadas
-                });
-            }
-
-            gameState.currentPlayerIdx = 0;
-            gameState.phase = 'ROLL';
-            gameState.validMoves = [];
-
-            document.getElementById('config-modal').classList.add('hidden');
-            document.getElementById('config-modal').classList.remove('flex');
-
-            buildBoardData();
-            renderBoard();
-            updateUI();
-        }
-
-        function updateUI() {
-            const currentPlayer = gameState.players[gameState.currentPlayerIdx];
-            
-            // Banner jugador actual
-            const banner = document.getElementById('current-player-banner');
-            banner.style.background = `linear-gradient(135deg, ${currentPlayer.color}, #1e293b)`;
-            document.getElementById('current-player-avatar').textContent = gameState.currentPlayerIdx + 1;
-            document.getElementById('current-player-name').textContent = currentPlayer.name;
-            
-            // Badge de áreas activas
-            document.getElementById('active-subjects-badge').textContent = 
-                gameState.activeSubjects.length === 5 ? 'Todas las áreas (5)' : `${gameState.activeSubjects.length} área(s) elegida(s)`;
-
-            // Botón de tirar dado y mensajes de estado
-            const btnRoll = document.getElementById('btn-roll');
-            const statusText = document.getElementById('game-status-text');
-            const moveHint = document.getElementById('move-hint');
-
-            if (gameState.phase === 'ROLL') {
-                btnRoll.disabled = false;
-                btnRoll.classList.remove('opacity-50', 'cursor-not-allowed');
-                statusText.textContent = '¡Te toca! Tira el dado virtual.';
-                moveHint.classList.add('hidden');
-            } else if (gameState.phase === 'MOVE') {
-                btnRoll.disabled = true;
-                btnRoll.classList.add('opacity-50', 'cursor-not-allowed');
-                statusText.textContent = `Has sacado un ${gameState.diceValue}. ¡Elige dirección en el tablero!`;
-                moveHint.classList.remove('hidden');
-            }
-
-            // Actualizar marcador y quesitos de cada jugador
-            const scoreboard = document.getElementById('players-scoreboard');
-            scoreboard.innerHTML = '';
-            gameState.players.forEach((p, idx) => {
-                const isTurn = idx === gameState.currentPlayerIdx;
-                let wedgesHTML = '';
-                
-                gameState.activeSubjects.forEach(subjId => {
-                    const subj = SUBJECTS[subjId];
-                    const hasWedge = p.wedges.includes(subjId);
-                    wedgesHTML += `
-                        <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs border-2 transition-all"
-                             style="background-color: ${hasWedge ? subj.color : '#f1f5f9'}; border-color: ${hasWedge ? subj.color : '#cbd5e1'}; color: ${hasWedge ? '#fff' : '#94a3b8'}"
-                             title="${subj.name}: ${hasWedge ? '¡Conseguido!' : 'Pendiente'}">
-                            <i class="fa-solid ${subj.icon}"></i>
-                        </div>
-                    `;
-                });
-
-                scoreboard.innerHTML += `
-                    <div class="p-3 rounded-2xl border-2 transition-all ${isTurn ? 'border-indigo-400 bg-indigo-50/40 shadow-sm' : 'border-slate-100 bg-slate-50/60'}">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style="background-color: ${p.color}">
-                                    ${idx + 1}
-                                </span>
-                                <span class="font-bold text-sm text-slate-800">${p.name}</span>
-                            </div>
-                            <span class="text-xs font-bold text-slate-500">${p.wedges.length}/${gameState.activeSubjects.length} quesitos</span>
-                        </div>
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            ${wedgesHTML}
-                        </div>
-                    </div>
-                `;
-            });
-
-            // Leyenda de áreas
-            const legend = document.getElementById('subjects-legend');
-            legend.innerHTML = '';
-            gameState.activeSubjects.forEach(subjId => {
-                const subj = SUBJECTS[subjId];
-                const totalQ = getActivePool(subjId).length;
-                legend.innerHTML += `
-                    <div class="flex items-center justify-between gap-2 p-2 rounded-xl ${subj.bgLight} border ${subj.borderCol}">
-                        <div class="flex items-center gap-2.5">
-                            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shrink-0" style="background-color: ${subj.color}">
-                                <i class="fa-solid ${subj.icon}"></i>
-                            </span>
-                            <span class="text-xs font-bold ${subj.textCol}">${subj.name}</span>
-                        </div>
-                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/80 ${subj.textCol}">${totalQ} preg.</span>
-                    </div>
-                `;
-            });
-        }
-
-        /* ==========================================================================
-           8. MECÁNICA DEL DADO Y MOVIMIENTO
-           ========================================================================== */
-        const DICE_ICONS = [
-            'fa-dice-one', 'fa-dice-two', 'fa-dice-three',
-            'fa-dice-four', 'fa-dice-five', 'fa-dice-six'
-        ];
-
         function rollDice() {
-            if (gameState.phase !== 'ROLL') return;
+            if (state.phase !== 'ROLL') return;
 
+            const btnRoll = document.getElementById('btn-roll');
             const diceBox = document.getElementById('dice-box');
             const diceIcon = document.getElementById('dice-icon');
-            const btnRoll = document.getElementById('btn-roll');
 
             btnRoll.disabled = true;
+            btnRoll.classList.add('opacity-50', 'cursor-not-allowed');
             diceBox.classList.add('rolling');
+            playSound('dice');
 
+            const diceIcons = ['fa-dice-one', 'fa-dice-two', 'fa-dice-three', 'fa-dice-four', 'fa-dice-five', 'fa-dice-six'];
             let ticks = 0;
+
             const interval = setInterval(() => {
                 const rand = Math.floor(Math.random() * 6);
-                diceIcon.className = `fa-solid ${DICE_ICONS[rand]}`;
-                playSound('dice');
+                diceIcon.className = `fa-solid ${diceIcons[rand]}`;
                 ticks++;
-
-                if (ticks >= 10) {
+                if (ticks >= 8) {
                     clearInterval(interval);
                     diceBox.classList.remove('rolling');
-                    
                     const finalRoll = Math.floor(Math.random() * 6) + 1;
-                    diceIcon.className = `fa-solid ${DICE_ICONS[finalRoll - 1]}`;
-                    gameState.diceValue = finalRoll;
-                    
-                    calculateValidMoves(finalRoll);
+                    state.diceValue = finalRoll;
+                    diceIcon.className = `fa-solid ${diceIcons[finalRoll - 1]}`;
+                    onDiceFinished(finalRoll);
                 }
-            }, 70);
+            }, 65);
         }
 
-        function calculateValidMoves(steps) {
-            const currentPlayer = gameState.players[gameState.currentPlayerIdx];
-            const total = gameState.boardCells.length; // 24
+        function onDiceFinished(roll) {
+            const player = state.players[state.currentPlayerIdx];
+            const cw = (player.position + roll) % BOARD_SIZE;
+            const ccw = (player.position - roll + BOARD_SIZE) % BOARD_SIZE;
 
-            // En Trivial puedes avanzar en sentido horario o antihorario
-            const forward = (currentPlayer.position + steps) % total;
-            const backward = (currentPlayer.position - steps + total) % total;
+            state.validMoves = cw === ccw ? [cw] : [cw, ccw];
+            state.phase = 'MOVE';
 
-            gameState.validMoves = forward === backward ? [forward] : [forward, backward];
-            gameState.phase = 'MOVE';
-
+            document.getElementById('game-status-text').textContent = `Ha salido un ${roll}. ¡Elige casilla en el tablero!`;
+            document.getElementById('move-hint').classList.remove('hidden');
             renderBoard();
-            updateUI();
         }
 
         function selectTargetCell(cellIndex) {
-            if (gameState.phase !== 'MOVE' || !gameState.validMoves.includes(cellIndex)) return;
+            if (state.phase !== 'MOVE' || !state.validMoves.includes(cellIndex)) return;
 
             playSound('move');
-            const currentPlayer = gameState.players[gameState.currentPlayerIdx];
-            currentPlayer.position = cellIndex;
-            gameState.validMoves = [];
-            gameState.phase = 'QUESTION';
+            const player = state.players[state.currentPlayerIdx];
+            player.position = cellIndex;
+            state.validMoves = [];
+            state.phase = 'QUESTION';
 
+            document.getElementById('move-hint').classList.add('hidden');
             renderBoard();
-            updateUI();
 
-            // Abrir modal de pregunta correspondiente al color de la casilla inmediatamente
-            const cell = gameState.boardCells[cellIndex];
-            if (cell) {
-                showQuestion(cell.subjectId, cell.isWedge);
-            }
+            const cell = state.boardCells[cellIndex];
+            openQuestionForCell(cell);
         }
 
         /* ==========================================================================
-           9. SISTEMA DE PREGUNTAS Y EVALUACIÓN (MODO RANDOM PERSISTENTE)
+           8. SELECCIÓN ALEATORIA DE PREGUNTAS (FISHER-YATES) Y MODAL
            ========================================================================== */
-        const STORAGE_KEY_USED = 'trivial_5primaria_used_questions_v1';
-
-        function loadUsedQuestions() {
-            try {
-                const saved = localStorage.getItem(STORAGE_KEY_USED);
-                return saved ? JSON.parse(saved) : {};
-            } catch (e) {
-                return {};
-            }
-        }
-
-        function saveUsedQuestions(usedMap) {
-            try {
-                localStorage.setItem(STORAGE_KEY_USED, JSON.stringify(usedMap));
-            } catch (e) {
-                // Ignorar si el navegador bloquea localStorage
-            }
-        }
-
-        // Barajado aleatorio Fisher-Yates para garantizar aleatoriedad real
-        function shuffleArray(arr) {
-            const copy = [...arr];
-            for (let i = copy.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [copy[i], copy[j]] = [copy[j], copy[i]];
-            }
-            return copy;
-        }
-
-        function getActivePool(subjectId) {
-            // Comprueba primero si se cargó el archivo externo (frances.js, conocimiento.js, etc.)
-            if (window.QUESTION_BANK && Array.isArray(window.QUESTION_BANK[subjectId]) && window.QUESTION_BANK[subjectId].length > 0) {
-                return window.QUESTION_BANK[subjectId];
-            }
-            return DEFAULT_QUESTION_BANK[subjectId] || [];
-        }
-
-        function getNextQuestion(subjectId) {
-            const pool = getActivePool(subjectId);
+        function getNextRandomQuestion(subjectId) {
+            const pool = getSubjectQuestions(subjectId);
             if (!pool || pool.length === 0) return null;
 
-            // Recuperar historial persistente para que no se repitan preguntas ni siquiera en partidas nuevas
-            const persistentUsed = loadUsedQuestions();
-            const key = `${subjectId}_${pool.length}`;
-            if (!Array.isArray(persistentUsed[key])) {
-                persistentUsed[key] = [];
+            state.seenQuestions[subjectId] = state.seenQuestions[subjectId] || [];
+            let seenIndices = state.seenQuestions[subjectId];
+
+            // Si ya han salido todas las preguntas de esta área, reiniciamos solo esta área
+            if (seenIndices.length >= pool.length) {
+                seenIndices = [];
+                state.seenQuestions[subjectId] = [];
             }
 
-            // Filtrar índices no usados aún
-            let availableIndices = pool
-                .map((_, idx) => idx)
-                .filter(idx => !persistentUsed[key].includes(idx));
-            
-            // Si ya se han hecho todas las preguntas de esa área, barajar de nuevo todo el mazo
-            if (availableIndices.length === 0) {
-                persistentUsed[key] = [];
-                availableIndices = pool.map((_, idx) => idx);
+            const unseenIndices = [];
+            for (let i = 0; i < pool.length; i++) {
+                if (!seenIndices.includes(i)) {
+                    unseenIndices.push(i);
+                }
             }
 
-            // Barajar los índices disponibles y extraer el primero
-            const shuffled = shuffleArray(availableIndices);
-            const chosenIdx = shuffled[0];
+            // Barajado Fisher-Yates sobre los índices no vistos
+            for (let i = unseenIndices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [unseenIndices[i], unseenIndices[j]] = [unseenIndices[j], unseenIndices[i]];
+            }
 
-            persistentUsed[key].push(chosenIdx);
-            gameState.usedQuestions[subjectId] = persistentUsed[key];
-            saveUsedQuestions(persistentUsed);
+            const chosenIndex = unseenIndices[0];
+            state.seenQuestions[subjectId].push(chosenIndex);
+            saveSeenQuestions();
 
-            return pool[chosenIdx];
+            return pool[chosenIndex];
         }
 
-        function showQuestion(subjectId, isWedge) {
-            const subj = SUBJECTS[subjectId];
-            const questionObj = getNextQuestion(subjectId);
-            if (!questionObj) return;
+        function openQuestionForCell(cell) {
+            const subj = SUBJECTS[cell.subjectId];
+            const question = getNextRandomQuestion(cell.subjectId);
+            if (!question) return;
 
-            gameState.currentQuestion = { ...questionObj, subjectId };
-            gameState.currentCellIsWedge = isWedge;
+            state.currentCell = cell;
+            state.currentQuestion = question;
 
             // Configurar cabecera del modal
             const header = document.getElementById('q-header');
@@ -1168,80 +850,87 @@
             document.getElementById('q-subject-name').textContent = subj.name;
 
             const wedgeBadge = document.getElementById('q-wedge-badge');
-            if (isWedge) {
+            if (cell.isWedge) {
                 wedgeBadge.classList.remove('hidden');
             } else {
                 wedgeBadge.classList.add('hidden');
             }
 
-            document.getElementById('q-text').textContent = questionObj.q;
+            document.getElementById('q-text').textContent = question.q;
 
-            // Renderizar opciones
+            // Renderizar opciones A, B, C, D
             const optionsContainer = document.getElementById('q-options');
             optionsContainer.innerHTML = '';
             const letters = ['A', 'B', 'C', 'D'];
 
-            questionObj.options.forEach((optText, idx) => {
+            question.options.forEach((optText, idx) => {
                 const btn = document.createElement('button');
-                btn.className = 'q-opt-btn w-full text-left p-4 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 font-semibold text-slate-700 transition flex items-center gap-3';
+                btn.type = 'button';
+                btn.className = 'q-opt-btn w-full text-left p-3.5 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50 font-semibold text-slate-700 transition flex items-center gap-3';
                 btn.innerHTML = `
-                    <span class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-bold flex items-center justify-center shrink-0">${letters[idx]}</span>
+                    <span class="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 font-bold flex items-center justify-center shrink-0">${letters[idx]}</span>
                     <span>${optText}</span>
                 `;
-                btn.onclick = () => checkAnswer(idx, btn);
+                btn.onclick = () => checkAnswer(idx);
                 optionsContainer.appendChild(btn);
             });
 
-            document.getElementById('q-feedback').classList.add('hidden');
+            // Ocultar retroalimentación anterior
+            const feedback = document.getElementById('q-feedback');
+            feedback.classList.add('hidden');
+
             const modal = document.getElementById('question-modal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
 
-        function checkAnswer(selectedIdx, clickedBtn) {
-            const q = gameState.currentQuestion;
+        function checkAnswer(selectedIdx) {
+            const q = state.currentQuestion;
+            const cell = state.currentCell;
+            const player = state.players[state.currentPlayerIdx];
             const isCorrect = selectedIdx === q.answer;
-            const buttons = document.querySelectorAll('.q-opt-btn');
 
-            // Deshabilitar todos los botones
+            const buttons = document.querySelectorAll('.q-opt-btn');
             buttons.forEach((btn, idx) => {
                 btn.disabled = true;
                 if (idx === q.answer) {
-                    btn.classList.remove('border-slate-200');
-                    btn.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-900');
+                    btn.className = 'q-opt-btn w-full text-left p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 font-bold text-emerald-900 flex items-center gap-3';
                 } else if (idx === selectedIdx && !isCorrect) {
-                    btn.classList.remove('border-slate-200');
-                    btn.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-900');
+                    btn.className = 'q-opt-btn w-full text-left p-3.5 rounded-2xl border-2 border-rose-500 bg-rose-50 font-bold text-rose-900 flex items-center gap-3';
+                } else {
+                    btn.className = 'q-opt-btn w-full text-left p-3.5 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-400 flex items-center gap-3 opacity-60';
                 }
             });
 
-            const feedbackBox = document.getElementById('q-feedback');
-            const feedbackTitle = document.getElementById('q-feedback-title');
-            const feedbackExp = document.getElementById('q-feedback-explanation');
+            const feedback = document.getElementById('q-feedback');
+            const fTitle = document.getElementById('q-feedback-title');
+            const fExp = document.getElementById('q-feedback-explanation');
 
-            feedbackBox.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-900', 'bg-rose-100', 'text-rose-900');
-
-            const currentPlayer = gameState.players[gameState.currentPlayerIdx];
+            feedback.classList.remove('hidden');
+            state._lastAnswerCorrect = isCorrect;
 
             if (isCorrect) {
-                playSound('correct');
-                feedbackBox.classList.add('bg-emerald-100', 'text-emerald-900');
-                
-                let extraMsg = "¡Respuesta correcta! Sigues tirando.";
-                if (gameState.currentCellIsWedge && !currentPlayer.wedges.includes(q.subjectId)) {
-                    currentPlayer.wedges.push(q.subjectId);
-                    extraMsg = `¡FANTÁSTICO! Has ganado el quesito de ${SUBJECTS[q.subjectId].name} y vuelves a tirar.`;
+                let gotNewWedge = false;
+                if (cell.isWedge && !player.wedges.includes(cell.subjectId)) {
+                    player.wedges.push(cell.subjectId);
+                    gotNewWedge = true;
+                    playSound('wedge');
+                } else {
+                    playSound('correct');
                 }
-                feedbackTitle.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> ${extraMsg}`;
+
+                feedback.className = 'p-4 rounded-2xl mb-2 bg-emerald-100/80 border border-emerald-300 text-emerald-950';
+                fTitle.innerHTML = gotNewWedge
+                    ? `<i class="fa-solid fa-star text-amber-500"></i> ¡Respuesta correcta! ¡Has ganado el quesito de ${SUBJECTS[cell.subjectId].short}!`
+                    : `<i class="fa-solid fa-circle-check text-emerald-600"></i> ¡Muy bien! Vuelves a tirar el dado.`;
             } else {
                 playSound('wrong');
-                feedbackBox.classList.add('bg-rose-100', 'text-rose-900');
-                feedbackTitle.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> ¡Vaya! No es correcto. Pasa el turno.`;
+                feedback.className = 'p-4 rounded-2xl mb-2 bg-rose-100/80 border border-rose-300 text-rose-950';
+                fTitle.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i> ¡Casi! Pasa el turno al siguiente jugador.`;
             }
 
-            feedbackExp.textContent = q.explanation;
-            gameState.lastAnswerCorrect = isCorrect;
-            updateUI();
+            fExp.textContent = q.explanation || '';
+            renderScoreboard();
         }
 
         function closeQuestionModal() {
@@ -1249,37 +938,108 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
 
-            const currentPlayer = gameState.players[gameState.currentPlayerIdx];
+            const player = state.players[state.currentPlayerIdx];
 
-            // Comprobar si el jugador actual ha ganado todos los quesitos activos
-            if (currentPlayer.wedges.length >= gameState.activeSubjects.length) {
-                playSound('win');
-                gameState.phase = 'GAMEOVER';
-                document.getElementById('winner-text').innerHTML = 
-                    `<strong class="text-indigo-600">${currentPlayer.name}</strong> ha completado todas las áreas de 5º de Primaria y gana la partida.`;
+            // Comprobar si el jugador ha conseguido todos los quesitos activos
+            if (player.wedges.length >= state.activeSubjects.length) {
+                document.getElementById('winner-text').innerHTML = `<strong>${player.name}</strong> ha conseguido todos los quesitos de 5º de Primaria. ¡Campeón/a!`;
                 const vModal = document.getElementById('victory-modal');
                 vModal.classList.remove('hidden');
                 vModal.classList.add('flex');
+                playSound('wedge');
                 return;
             }
 
-            // Si acertó mantiene el turno; si falló pasa al siguiente jugador
-            if (!gameState.lastAnswerCorrect) {
-                gameState.currentPlayerIdx = (gameState.currentPlayerIdx + 1) % gameState.players.length;
+            // Si falló, pasa al siguiente jugador; si acertó, conserva el turno
+            if (!state._lastAnswerCorrect) {
+                state.currentPlayerIdx = (state.currentPlayerIdx + 1) % state.players.length;
             }
 
-            gameState.phase = 'ROLL';
-            updateUI();
+            state.phase = 'ROLL';
+            const btnRoll = document.getElementById('btn-roll');
+            btnRoll.disabled = false;
+            btnRoll.classList.remove('opacity-50', 'cursor-not-allowed');
+            updateTurnUI();
         }
 
         /* ==========================================================================
-           10. ARRANQUE INICIAL
+           9. ACTUALIZACIÓN DE INTERFAZ (MARCADOR, LEYENDA Y TURNO)
            ========================================================================== */
-        window.onload = function() {
+        function updateTurnUI() {
+            const player = state.players[state.currentPlayerIdx];
+            if (!player) return;
+
+            const banner = document.getElementById('current-player-banner');
+            banner.style.background = player.color;
+            document.getElementById('current-player-avatar').textContent = player.id + 1;
+            document.getElementById('current-player-name').textContent = player.name;
+            document.getElementById('game-status-text').textContent = '¡Tira el dado para avanzar!';
+            document.getElementById('active-subjects-badge').textContent = `${state.activeSubjects.length} Área${state.activeSubjects.length > 1 ? 's' : ''} activa${state.activeSubjects.length > 1 ? 's' : ''}`;
+        }
+
+        function renderScoreboard() {
+            const container = document.getElementById('players-scoreboard');
+            container.innerHTML = '';
+
+            state.players.forEach((p, idx) => {
+                const isCurrent = idx === state.currentPlayerIdx;
+                const wedgesHTML = state.activeSubjects.map(subjId => {
+                    const subj = SUBJECTS[subjId];
+                    const earned = p.wedges.includes(subjId);
+                    return `
+                        <span title="${subj.name}" class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] border ${earned ? 'text-white shadow-sm' : 'bg-slate-100 text-slate-300 border-slate-200'}" style="${earned ? `background:${subj.color}; border-color:${subj.color};` : ''}">
+                            <i class="fa-solid ${earned ? 'fa-star' : subj.icon}"></i>
+                        </span>
+                    `;
+                }).join('');
+
+                container.innerHTML += `
+                    <div class="p-3 rounded-2xl border-2 transition ${isCurrent ? 'border-indigo-400 bg-indigo-50/40 shadow-sm' : 'border-slate-100 bg-slate-50/60'}">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg text-white text-xs font-bold flex items-center justify-center" style="background:${p.color}">${p.id + 1}</span>
+                                <span class="font-bold text-sm text-slate-800">${p.name}</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-500">${p.wedges.length}/${state.activeSubjects.length} ★</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            ${wedgesHTML}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderLegend() {
+            const container = document.getElementById('subjects-legend');
+            container.innerHTML = '';
+            let totalLoaded = 0;
+
+            state.activeSubjects.forEach(subjId => {
+                const subj = SUBJECTS[subjId];
+                const count = getSubjectQuestions(subjId).length;
+                totalLoaded += count;
+
+                container.innerHTML += `
+                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg flex items-center justify-center text-white text-xs shrink-0" style="background:${subj.color}">
+                                <i class="fa-solid ${subj.icon}"></i>
+                            </span>
+                            <span class="text-xs font-bold text-slate-700">${subj.name}</span>
+                        </div>
+                        <span class="text-[11px] font-semibold text-slate-500">${count} preg.</span>
+                    </div>
+                `;
+            });
+
+            document.getElementById('total-questions-badge').textContent = `${totalLoaded} preg.`;
+        }
+
+        // Inicializar al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
             initConfigUI();
-            buildBoardData();
-            renderBoard();
-        };
+        });
     </script>
 </body>
 </html>
