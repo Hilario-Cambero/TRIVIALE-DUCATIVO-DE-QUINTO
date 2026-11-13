@@ -239,8 +239,62 @@
         </div>
     </div>
 
+    <!-- MODAL DE PREGUNTA -->
+    <div id="question-modal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-slate-100 my-auto">
+            <div id="q-header" class="p-5 text-white flex items-center justify-between bg-indigo-600">
+                <div class="flex items-center gap-3">
+                    <span id="q-icon" class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-question"></i>
+                    </span>
+                    <div>
+                        <span class="text-xs uppercase tracking-wider font-bold opacity-80">Pregunta de Área</span>
+                        <h3 id="q-subject-name" class="text-xl font-bold leading-tight">Asignatura</h3>
+                    </div>
+                </div>
+                <span id="q-wedge-badge" class="hidden px-3 py-1 rounded-full bg-amber-400 text-amber-950 text-xs font-extrabold uppercase tracking-wide shadow">
+                    ★ ¡Por el Quesito!
+                </span>
+            </div>
+
+            <div class="p-6">
+                <p id="q-text" class="text-lg sm:text-xl font-bold text-slate-800 mb-5 leading-snug">
+                    ¿Pregunta?
+                </p>
+
+                <div id="q-options" class="space-y-3 mb-5">
+                    <!-- Opciones A, B, C, D -->
+                </div>
+
+                <!-- Retroalimentación educativa -->
+                <div id="q-feedback" class="hidden p-4 rounded-2xl mb-4">
+                    <p id="q-feedback-title" class="font-bold text-base mb-1"></p>
+                    <p id="q-feedback-explanation" class="text-sm opacity-90 mb-3"></p>
+                    <button onclick="closeQuestionModal()" class="btn-game w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm">
+                        Continuar partida <i class="fa-solid fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE VICTORIA -->
+    <div id="victory-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 text-center shadow-2xl border-4 border-amber-400">
+            <div class="w-20 h-20 rounded-full bg-amber-100 text-amber-500 text-4xl flex items-center justify-center mx-auto mb-4 shadow-inner">
+                <i class="fa-solid fa-crown"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-slate-900 mb-2">¡ENHORABUENA!</h2>
+            <p id="winner-text" class="text-slate-600 mb-6">¡Has ganado la partida!</p>
+            <button onclick="openConfigModal()" class="btn-game w-full py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-game text-lg">
+                Jugar Otra Partida
+            </button>
+        </div>
+    </div>
+
     <!-- Carga de bancos de preguntas externos por área (GitHub) -->
     <script src="frances.js"></script>
+    <script src="conocimiento.js"></script>
 
     <script>
         /* ==========================================================================
@@ -654,7 +708,11 @@
                 g.setAttribute("transform", `translate(${cell.x}, ${cell.y})`);
                 if (isValid) {
                     g.classList.add('valid-move');
-                    g.onclick = () => selectTargetCell(cell.index);
+                    g.style.cursor = 'pointer';
+                    g.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        selectTargetCell(cell.index);
+                    });
                 }
 
                 // Círculo de la casilla (más grande si es quesito)
@@ -663,6 +721,7 @@
                 circle.setAttribute("fill", subj.color);
                 circle.setAttribute("stroke", isValid ? "#facc15" : "#ffffff");
                 circle.setAttribute("stroke-width", isValid ? "5" : "3");
+                if (isValid) circle.style.pointerEvents = 'all';
                 g.appendChild(circle);
 
                 // Si es casilla de quesito, dibujar una estrella blanca en el centro
@@ -672,6 +731,7 @@
                     star.setAttribute("dy", "5");
                     star.setAttribute("fill", "#ffffff");
                     star.setAttribute("font-size", "16");
+                    star.style.pointerEvents = 'none';
                     star.textContent = "★";
                     g.appendChild(star);
                 }
@@ -926,8 +986,16 @@
         /* ==========================================================================
            9. SISTEMA DE PREGUNTAS Y EVALUACIÓN
            ========================================================================== */
+        function getActivePool(subjectId) {
+            // Comprueba primero si se cargó el archivo externo (frances.js, conocimiento.js, etc.)
+            if (window.QUESTION_BANK && Array.isArray(window.QUESTION_BANK[subjectId]) && window.QUESTION_BANK[subjectId].length > 0) {
+                return window.QUESTION_BANK[subjectId];
+            }
+            return DEFAULT_QUESTION_BANK[subjectId] || [];
+        }
+
         function getNextQuestion(subjectId) {
-            const pool = QUESTION_BANK[subjectId];
+            const pool = getActivePool(subjectId);
             if (!gameState.usedQuestions[subjectId]) gameState.usedQuestions[subjectId] = [];
 
             // Filtrar índices no usados aún
@@ -947,6 +1015,7 @@
         function showQuestion(subjectId, isWedge) {
             const subj = SUBJECTS[subjectId];
             const questionObj = getNextQuestion(subjectId);
+            if (!questionObj) return;
 
             gameState.currentQuestion = { ...questionObj, subjectId };
             gameState.currentCellIsWedge = isWedge;
