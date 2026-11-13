@@ -178,7 +178,7 @@
                     <text x="300" y="317" text-anchor="middle" fill="#c7d2fe" font-family="Inter" font-size="13" font-weight="bold">5º PRIMARIA</text>
 
                     <!-- Grupo donde se dibujan las fichas de los jugadores -->
-                    <g id="board-tokens"></g>
+                    <g id="board-tokens" pointer-events="none"></g>
                 </svg>
             </div>
         </section>
@@ -488,6 +488,90 @@
                     options: ["Bonsoir", "Bonjour", "Au revoir", "Merci"],
                     answer: 1,
                     explanation: "'Bonjour' se utiliza para saludar durante el día en francés."
+                },
+                {
+                    q: "¿Cómo se dice 'la habitación' en francés?",
+                    options: ["La cuisine", "La chambre", "Le salon", "Le toit"],
+                    answer: 1,
+                    explanation: "'La chambre' significa la habitación o dormitorio."
+                },
+                {
+                    q: "¿Qué significa la preposición 'SOUS' en español?",
+                    options: ["Encima", "Debajo", "Dentro", "Detrás"],
+                    answer: 1,
+                    explanation: "'SOUS' significa debajo (ej. Le chat est sous la table)."
+                },
+                {
+                    q: "¿Qué significa la preposición 'DEVANT' en español?",
+                    options: ["Detrás", "Delante", "Al lado", "Entre"],
+                    answer: 1,
+                    explanation: "'DEVANT' significa delante."
+                },
+                {
+                    q: "¿Cómo se dice 'encima / sobre' en francés?",
+                    options: ["SOUS", "SUR", "DANS", "ENTRE"],
+                    answer: 1,
+                    explanation: "'SUR' significa encima o sobre."
+                },
+                {
+                    q: "¿Cómo se dice 'el ordenador' en francés?",
+                    options: ["Le clavier", "L'ordinateur", "La souris", "L'écran"],
+                    answer: 1,
+                    explanation: "'L'ordinateur' significa el ordenador."
+                },
+                {
+                    q: "¿Qué significa 'La souris' en informática?",
+                    options: ["El teclado", "El ratón del ordenador", "La pantalla", "La tablet"],
+                    answer: 1,
+                    explanation: "'La souris' significa el ratón."
+                },
+                {
+                    q: "Conjuga el verbo 'parler' (hablar): 'Nous _____ français'.",
+                    options: ["parlez", "parlons", "parlent", "parle"],
+                    answer: 1,
+                    explanation: "Con 'Nous' los verbos regulares en -ER terminan en '-ons': Nous parlons."
+                },
+                {
+                    q: "Conjuga el verbo 'parler': 'Tu _____ très bien'.",
+                    options: ["parle", "parles", "parlez", "parlent"],
+                    answer: 1,
+                    explanation: "Con 'Tu' los verbos regulares en -ER terminan en '-es': Tu parles."
+                },
+                {
+                    q: "¿Qué mueble es 'L'armoire'?",
+                    options: ["La cama", "El armario", "El sofá", "La silla"],
+                    answer: 1,
+                    explanation: "'L'armoire' significa el armario."
+                },
+                {
+                    q: "¿Qué estancia de la casa es 'La cuisine'?",
+                    options: ["El salón", "La cocina", "El cuarto de baño", "El jardín"],
+                    answer: 1,
+                    explanation: "'La cuisine' es la cocina."
+                },
+                {
+                    q: "¿Cómo se dice 'al lado (de)' en francés?",
+                    options: ["À CÔTÉ (de)", "DERRIÈRE", "DANS", "ENTRE"],
+                    answer: 0,
+                    explanation: "'À côté (de)' significa al lado de."
+                },
+                {
+                    q: "Completa: 'Le chat est _____ la boîte' (dentro de la caja).",
+                    options: ["sur", "dans", "sous", "devant"],
+                    answer: 1,
+                    explanation: "'Dans' significa dentro o en."
+                },
+                {
+                    q: "¿Qué objeto es 'Le clavier'?",
+                    options: ["La pantalla", "El teclado", "El ratón", "La lámpara"],
+                    answer: 1,
+                    explanation: "'Le clavier' es el teclado."
+                },
+                {
+                    q: "Conjuga: 'Ils _____ dans le jardin' (jouer - jugar).",
+                    options: ["joue", "jouons", "jouent", "jouez"],
+                    answer: 2,
+                    explanation: "Con 'Ils / Elles' la terminación es '-ent': Ils jouent."
                 }
             ]
         };
@@ -709,10 +793,11 @@
                 if (isValid) {
                     g.classList.add('valid-move');
                     g.style.cursor = 'pointer';
-                    g.addEventListener('click', (e) => {
-                        e.stopPropagation();
+                    g.setAttribute("pointer-events", "all");
+                    g.onclick = function(e) {
+                        if (e) e.stopPropagation();
                         selectTargetCell(cell.index);
-                    });
+                    };
                 }
 
                 // Círculo de la casilla (más grande si es quesito)
@@ -721,7 +806,13 @@
                 circle.setAttribute("fill", subj.color);
                 circle.setAttribute("stroke", isValid ? "#facc15" : "#ffffff");
                 circle.setAttribute("stroke-width", isValid ? "5" : "3");
-                if (isValid) circle.style.pointerEvents = 'all';
+                if (isValid) {
+                    circle.setAttribute("pointer-events", "all");
+                    circle.onclick = function(e) {
+                        if (e) e.stopPropagation();
+                        selectTargetCell(cell.index);
+                    };
+                }
                 g.appendChild(circle);
 
                 // Si es casilla de quesito, dibujar una estrella blanca en el centro
@@ -731,7 +822,7 @@
                     star.setAttribute("dy", "5");
                     star.setAttribute("fill", "#ffffff");
                     star.setAttribute("font-size", "16");
-                    star.style.pointerEvents = 'none';
+                    star.setAttribute("pointer-events", "none");
                     star.textContent = "★";
                     g.appendChild(star);
                 }
@@ -902,12 +993,16 @@
             legend.innerHTML = '';
             gameState.activeSubjects.forEach(subjId => {
                 const subj = SUBJECTS[subjId];
+                const totalQ = getActivePool(subjId).length;
                 legend.innerHTML += `
-                    <div class="flex items-center gap-2.5 p-2 rounded-xl ${subj.bgLight} border ${subj.borderCol}">
-                        <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shrink-0" style="background-color: ${subj.color}">
-                            <i class="fa-solid ${subj.icon}"></i>
-                        </span>
-                        <span class="text-xs font-bold ${subj.textCol}">${subj.name}</span>
+                    <div class="flex items-center justify-between gap-2 p-2 rounded-xl ${subj.bgLight} border ${subj.borderCol}">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shrink-0" style="background-color: ${subj.color}">
+                                <i class="fa-solid ${subj.icon}"></i>
+                            </span>
+                            <span class="text-xs font-bold ${subj.textCol}">${subj.name}</span>
+                        </div>
+                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/80 ${subj.textCol}">${totalQ} preg.</span>
                     </div>
                 `;
             });
@@ -978,14 +1073,45 @@
             renderBoard();
             updateUI();
 
-            // Abrir modal de pregunta correspondiente al color de la casilla
+            // Abrir modal de pregunta correspondiente al color de la casilla inmediatamente
             const cell = gameState.boardCells[cellIndex];
-            setTimeout(() => showQuestion(cell.subjectId, cell.isWedge), 350);
+            if (cell) {
+                showQuestion(cell.subjectId, cell.isWedge);
+            }
         }
 
         /* ==========================================================================
-           9. SISTEMA DE PREGUNTAS Y EVALUACIÓN
+           9. SISTEMA DE PREGUNTAS Y EVALUACIÓN (MODO RANDOM PERSISTENTE)
            ========================================================================== */
+        const STORAGE_KEY_USED = 'trivial_5primaria_used_questions_v1';
+
+        function loadUsedQuestions() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY_USED);
+                return saved ? JSON.parse(saved) : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveUsedQuestions(usedMap) {
+            try {
+                localStorage.setItem(STORAGE_KEY_USED, JSON.stringify(usedMap));
+            } catch (e) {
+                // Ignorar si el navegador bloquea localStorage
+            }
+        }
+
+        // Barajado aleatorio Fisher-Yates para garantizar aleatoriedad real
+        function shuffleArray(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
         function getActivePool(subjectId) {
             // Comprueba primero si se cargó el archivo externo (frances.js, conocimiento.js, etc.)
             if (window.QUESTION_BANK && Array.isArray(window.QUESTION_BANK[subjectId]) && window.QUESTION_BANK[subjectId].length > 0) {
@@ -996,19 +1122,34 @@
 
         function getNextQuestion(subjectId) {
             const pool = getActivePool(subjectId);
-            if (!gameState.usedQuestions[subjectId]) gameState.usedQuestions[subjectId] = [];
+            if (!pool || pool.length === 0) return null;
+
+            // Recuperar historial persistente para que no se repitan preguntas ni siquiera en partidas nuevas
+            const persistentUsed = loadUsedQuestions();
+            const key = `${subjectId}_${pool.length}`;
+            if (!Array.isArray(persistentUsed[key])) {
+                persistentUsed[key] = [];
+            }
 
             // Filtrar índices no usados aún
-            let availableIndices = pool.map((_, idx) => idx).filter(idx => !gameState.usedQuestions[subjectId].includes(idx));
+            let availableIndices = pool
+                .map((_, idx) => idx)
+                .filter(idx => !persistentUsed[key].includes(idx));
             
-            // Si ya se han hecho todas, reiniciar el ciclo de esa área
+            // Si ya se han hecho todas las preguntas de esa área, barajar de nuevo todo el mazo
             if (availableIndices.length === 0) {
-                gameState.usedQuestions[subjectId] = [];
+                persistentUsed[key] = [];
                 availableIndices = pool.map((_, idx) => idx);
             }
 
-            const chosenIdx = availableIndices[Math.floor(Math.random() * availableIndices.length)];
-            gameState.usedQuestions[subjectId].push(chosenIdx);
+            // Barajar los índices disponibles y extraer el primero
+            const shuffled = shuffleArray(availableIndices);
+            const chosenIdx = shuffled[0];
+
+            persistentUsed[key].push(chosenIdx);
+            gameState.usedQuestions[subjectId] = persistentUsed[key];
+            saveUsedQuestions(persistentUsed);
+
             return pool[chosenIdx];
         }
 
