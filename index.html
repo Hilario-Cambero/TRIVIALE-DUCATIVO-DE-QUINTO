@@ -239,63 +239,8 @@
         </div>
     </div>
 
-    <!-- MODAL DE PREGUNTA -->
-    <div id="question-modal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-slate-100 transform transition-all">
-            <!-- Cabecera del color del área -->
-            <div id="q-header" class="p-5 text-white flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <div id="q-icon" class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl">
-                        <i class="fa-solid fa-calculator"></i>
-                    </div>
-                    <div>
-                        <span id="q-subject-name" class="font-game text-lg tracking-wide block leading-none">Matemáticas</span>
-                        <span id="q-wedge-badge" class="text-xs bg-amber-400 text-slate-900 font-bold px-2 py-0.5 rounded-full inline-block mt-1">
-                            <i class="fa-solid fa-star"></i> ¡PREGUNTA DE QUESITO!
-                        </span>
-                    </div>
-                </div>
-                <span class="text-xs font-bold uppercase bg-black/20 px-3 py-1 rounded-full">5º Primaria</span>
-            </div>
-
-            <!-- Cuerpo de la pregunta -->
-            <div class="p-6">
-                <p id="q-text" class="text-lg sm:text-xl font-bold text-slate-800 mb-6 leading-snug">
-                    ¿Cuál es el resultado de multiplicar 25 x 4?
-                </p>
-
-                <!-- Opciones de respuesta -->
-                <div id="q-options" class="space-y-3">
-                    <!-- Botones generados dinámicamente -->
-                </div>
-
-                <!-- Mensaje de retroalimentación -->
-                <div id="q-feedback" class="mt-5 p-4 rounded-2xl hidden">
-                    <p id="q-feedback-title" class="font-bold text-base mb-1"></p>
-                    <p id="q-feedback-explanation" class="text-sm"></p>
-                    <button onclick="closeQuestionModal()" class="btn-game mt-4 w-full py-3 rounded-xl bg-slate-800 text-white font-bold">
-                        Continuar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL DE VICTORIA -->
-    <div id="victory-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 hidden items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-8 text-center shadow-2xl border-4 border-amber-400">
-            <div class="w-24 h-24 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center text-5xl mx-auto mb-4 animate-bounce">
-                <i class="fa-solid fa-crown"></i>
-            </div>
-            <h2 class="text-3xl font-game font-bold text-slate-900 mb-2">¡ENHORABUENA!</h2>
-            <p id="winner-text" class="text-lg text-slate-600 mb-6">
-                <strong class="text-indigo-600">Jugador 1</strong> ha conseguido todos los quesitos y ha ganado la partida.
-            </p>
-            <button onclick="openConfigModal()" class="btn-game w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 text-white font-game text-lg">
-                Jugar Otra Partida
-            </button>
-        </div>
-    </div>
+    <!-- Carga de bancos de preguntas externos por área (GitHub) -->
+    <script src="frances.js"></script>
 
     <script>
         /* ==========================================================================
@@ -351,10 +296,10 @@
 
         /* ==========================================================================
            2. BANCO DE PREGUNTAS DE 5º DE PRIMARIA
-           Nota: En el futuro puedes sustituir o ampliar este objeto cargando 
-           archivos JSON desde tu repositorio de GitHub mediante fetch().
+           Combina las preguntas base con los archivos externos de cada área
+           (ej. frances.js, matematicas.js, lengua.js, conocimiento.js, ingles.js)
            ========================================================================== */
-        const QUESTION_BANK = {
+        const DEFAULT_QUESTION_BANK = {
             matematicas: [
                 {
                     q: "¿Cómo se llama el triángulo que tiene todos sus lados iguales?",
@@ -489,32 +434,17 @@
                     options: ["Bonsoir", "Bonjour", "Au revoir", "Merci"],
                     answer: 1,
                     explanation: "'Bonjour' se utiliza para saludar durante el día en francés."
-                },
-                {
-                    q: "¿Qué número es 'quinze' en español?",
-                    options: ["5", "15", "50", "14"],
-                    answer: 1,
-                    explanation: "'Quinze' significa 15 (cinco es 'cinq' y cincuenta es 'cinquante')."
-                },
-                {
-                    q: "¿De qué color es 'le ciel' cuando hace buen tiempo ('bleu')?",
-                    options: ["Rojo", "Verde", "Azul", "Amarillo"],
-                    answer: 2,
-                    explanation: "'Bleu' significa azul en francés."
-                },
-                {
-                    q: "Completa la presentación: 'Je _____ Pierre' (Yo me llamo Pierre).",
-                    options: ["suis", "m'appelle", "ai", "vais"],
-                    answer: 1,
-                    explanation: "'Je m'appelle...' significa 'Yo me llamo...'."
-                },
-                {
-                    q: "¿Qué día de la semana va después de 'Lundi'?",
-                    options: ["Mercredi", "Mardi", "Jeudi", "Dimanche"],
-                    answer: 1,
-                    explanation: "Los días de la semana son: Lundi (lunes), Mardi (martes), Mercredi (miércoles)..."
                 }
             ]
+        };
+
+        // Fusionar bancos externos (como frances.js) con el banco por defecto
+        const QUESTION_BANK = {
+            matematicas: (window.QUESTION_BANK && window.QUESTION_BANK.matematicas) || DEFAULT_QUESTION_BANK.matematicas,
+            lengua: (window.QUESTION_BANK && window.QUESTION_BANK.lengua) || DEFAULT_QUESTION_BANK.lengua,
+            conocimiento: (window.QUESTION_BANK && window.QUESTION_BANK.conocimiento) || DEFAULT_QUESTION_BANK.conocimiento,
+            ingles: (window.QUESTION_BANK && window.QUESTION_BANK.ingles) || DEFAULT_QUESTION_BANK.ingles,
+            frances: (window.QUESTION_BANK && window.QUESTION_BANK.frances) || DEFAULT_QUESTION_BANK.frances
         };
 
         /* ==========================================================================
