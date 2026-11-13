@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trivial Educativo - 5º de Educación Primaria</title>
+    <!-- Tailwind CSS para diseño moderno y adaptable -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para iconos educativos y fichas -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tone.js para efectos de sonido interactivos sin archivos externos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Google Fonts: Fredoka para un toque juvenil/educativo y Inter para lectura clara -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, #eef2ff, #e0e7ff, #f8fafc);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        h1, h2, h3, .font-game {
+            font-family: 'Fredoka', sans-serif;
+        }
+        
+        /* Animación del dado 3D simulado */
+        @keyframes diceRoll {
+            0% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(90deg) scale(1.15); }
+            50% { transform: rotate(180deg) scale(0.95); }
+            75% { transform: rotate(270deg) scale(1.15); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+        .rolling {
+            animation: diceRoll 0.5s ease-in-out infinite;
+        }
+
+        /* Estilo de botones tipo juego */
+        .btn-game {
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.15);
+        }
+        .btn-game:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 rgba(0, 0, 0, 0.15);
+        }
+        .btn-game:active:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.15);
+        }
+
+        /* Pulsación suave para casillas válidas */
+        @keyframes pulseHighlight {
+            0%, 100% { stroke-width: 4; filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.9)); }
+            50% { stroke-width: 7; filter: drop-shadow(0 0 14px rgba(250, 204, 21, 1)); }
+        }
+        .valid-move {
+            animation: pulseHighlight 1.2s infinite;
+            cursor: pointer;
+        }
+
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; rounded: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="text-slate-800 select-none">
+
+    <!-- CABECERA PRINCIPAL -->
+    <header class="bg-white/80 backdrop-blur-md border-b border-indigo-100 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center text-white text-xl shadow-md">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold text-indigo-950 leading-none">Trivial 5º Primaria</h1>
+                    <p class="text-xs text-slate-500 font-medium">Repaso Interactivo Multidisciplinar</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button id="btn-sound" onclick="toggleSound()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Activar/Desactivar Sonido">
+                    <i id="icon-sound" class="fa-solid fa-volume-high"></i>
+                </button>
+                <button onclick="openConfigModal()" class="btn-game px-4 py-2 rounded-xl bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-semibold text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-gear"></i> <span class="hidden sm:inline">Nueva Partida / Ajustes</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENEDOR PRINCIPAL DEL JUEGO -->
+    <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- COLUMNA IZQUIERDA: PANEL DE JUGADORES Y QUESITOS (4 columnas en escritorio) -->
+        <section class="lg:col-span-4 space-y-4 order-2 lg:order-1">
+            <!-- Panel de Turno y Dado Virtual -->
+            <div class="bg-white rounded-3xl p-5 shadow-lg border border-indigo-50">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-xs font-bold uppercase tracking-wider text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">Turno Actual</span>
+                    <span id="active-subjects-badge" class="text-xs font-medium text-slate-500">5 Áreas activas</span>
+                </div>
+                
+                <div id="current-player-banner" class="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md mb-5 transition-all">
+                    <div id="current-player-avatar" class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-2xl font-bold backdrop-blur-sm">
+                        1
+                    </div>
+                    <div>
+                        <h2 id="current-player-name" class="text-xl font-bold leading-tight">Jugador 1</h2>
+                        <p id="game-status-text" class="text-xs text-blue-100 font-medium">¡Tira el dado para comenzar!</p>
+                    </div>
+                </div>
+
+                <!-- Área del Dado -->
+                <div class="flex flex-col items-center justify-center bg-slate-50 rounded-2xl p-4 border-2 border-dashed border-slate-200">
+                    <div id="dice-box" class="w-20 h-20 bg-white rounded-2xl shadow-lg border-2 border-indigo-100 flex items-center justify-center text-5xl text-indigo-600 mb-3 transition-transform">
+                        <i id="dice-icon" class="fa-solid fa-dice-five"></i>
+                    </div>
+                    <button id="btn-roll" onclick="rollDice()" class="btn-game w-full py-3 px-6 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-game text-lg tracking-wide flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-dice"></i> TIRAR DADO
+                    </button>
+                </div>
+            </div>
+
+            <!-- Marcador de Jugadores y Quesitos -->
+            <div class="bg-white rounded-3xl p-5 shadow-lg border border-indigo-50">
+                <h3 class="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-500"></i> Marcador y Quesitos
+                </h3>
+                <div id="players-scoreboard" class="space-y-3">
+                    <!-- Se rellena dinámicamente con JS -->
+                </div>
+            </div>
+
+            <!-- Leyenda de Áreas Activas -->
+            <div class="bg-white rounded-3xl p-5 shadow-lg border border-indigo-50">
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Áreas de 5º Primaria</h3>
+                <div id="subjects-legend" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
+                    <!-- Se rellena dinámicamente -->
+                </div>
+            </div>
+        </section>
+
+        <!-- COLUMNA CENTRAL/DERECHA: TABLERO INTERACTIVO SVG (8 columnas en escritorio) -->
+        <section class="lg:col-span-8 bg-white rounded-3xl p-4 sm:p-6 shadow-xl border border-indigo-50 flex flex-col items-center justify-center order-1 lg:order-2 relative">
+            <div class="w-full flex items-center justify-between mb-2 px-2">
+                <span class="text-xs sm:text-sm font-semibold text-slate-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-star text-amber-400"></i> Casillas con estrella = <strong>¡Quesito!</strong>
+                </span>
+                <span id="move-hint" class="text-xs sm:text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full hidden animate-bounce">
+                    ¡Elige una casilla iluminada!
+                </span>
+            </div>
+
+            <!-- Contenedor fluido del tablero SVG -->
+            <div class="w-full max-w-[620px] aspect-square relative flex items-center justify-center">
+                <svg id="trivial-board" viewBox="0 0 600 600" class="w-full h-full drop-shadow-md">
+                    <!-- Fondo decorativo del tablero -->
+                    <circle cx="300" cy="300" r="290" fill="#f8fafc" stroke="#e2e8f0" stroke-width="6"/>
+                    <circle cx="300" cy="300" r="215" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="3" stroke-dasharray="8 6"/>
+                    
+                    <!-- Grupo donde se dibujan las casillas y conexiones -->
+                    <g id="board-cells"></g>
+
+                    <!-- Centro del tablero -->
+                    <circle cx="300" cy="300" r="68" fill="url(#centerGrad)" stroke="#ffffff" stroke-width="5" class="shadow-lg"/>
+                    <defs>
+                        <linearGradient id="centerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#4f46e5"/>
+                            <stop offset="100%" stop-color="#7c3aed"/>
+                        </linearGradient>
+                    </defs>
+                    <text x="300" y="293" text-anchor="middle" fill="#ffffff" font-family="Fredoka" font-size="22" font-weight="bold">TRIVIAL</text>
+                    <text x="300" y="317" text-anchor="middle" fill="#c7d2fe" font-family="Inter" font-size="13" font-weight="bold">5º PRIMARIA</text>
+
+                    <!-- Grupo donde se dibujan las fichas de los jugadores -->
+                    <g id="board-tokens"></g>
+                </svg>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL DE CONFIGURACIÓN INICIAL (JUGADORES Y ÁREAS) -->
+    <div id="config-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-indigo-100 my-auto">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 text-3xl mb-3">
+                    <i class="fa-solid fa-gamepad"></i>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-slate-900">Configurar Partida</h2>
+                <p class="text-slate-500 text-sm mt-1">Personaliza los participantes y las asignaturas de 5º de Primaria</p>
+            </div>
+
+            <!-- Paso 1: Número de Participantes -->
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-slate-700 mb-2">1. ¿Cuántos jugadores o equipos van a jugar? (Máx. 4)</label>
+                <div class="grid grid-cols-4 gap-3 mb-4">
+                    <button type="button" onclick="setPlayerCount(1)" class="player-count-btn py-2.5 rounded-xl font-bold border-2 transition" data-count="1">1 Jugador</button>
+                    <button type="button" onclick="setPlayerCount(2)" class="player-count-btn py-2.5 rounded-xl font-bold border-2 transition" data-count="2">2 Jugadores</button>
+                    <button type="button" onclick="setPlayerCount(3)" class="player-count-btn py-2.5 rounded-xl font-bold border-2 transition" data-count="3">3 Jugadores</button>
+                    <button type="button" onclick="setPlayerCount(4)" class="player-count-btn py-2.5 rounded-xl font-bold border-2 transition" data-count="4">4 Jugadores</button>
+                </div>
+                
+                <!-- Nombres de los jugadores -->
+                <div id="player-names-inputs" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- Generado dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Paso 2: Selección de Áreas -->
+            <div class="mb-6">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-sm font-bold text-slate-700">2. Elige las áreas para repasar:</label>
+                    <button type="button" onclick="toggleAllSubjects()" class="text-xs font-bold text-indigo-600 hover:underline">Seleccionar / Desmarcar todas</button>
+                </div>
+                <div id="subjects-checkboxes" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <!-- Generado dinámicamente -->
+                </div>
+                <p id="subject-error" class="text-xs text-rose-600 font-semibold mt-2 hidden">
+                    <i class="fa-solid fa-circle-exclamation"></i> Debes seleccionar al menos un área para jugar.
+                </p>
+            </div>
+
+            <!-- Nota informativa sobre futura integración con GitHub -->
+            <div class="bg-slate-50 rounded-2xl p-3.5 mb-6 border border-slate-200 flex items-start gap-3 text-xs text-slate-600">
+                <i class="fa-brands fa-github text-xl text-slate-800 mt-0.5"></i>
+                <div>
+                    <strong class="text-slate-800">Preparado para GitHub:</strong> El banco de preguntas está estructurado por áreas para que puedas ampliarlo o conectarlo con archivos JSON externos en tu repositorio fácilmente.
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="btn-game w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-game text-xl shadow-lg">
+                ¡EMPEZAR A JUGAR! <i class="fa-solid fa-play ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL DE PREGUNTA -->
+    <div id="question-modal" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl border border-slate-100 transform transition-all">
+            <!-- Cabecera del color del área -->
+            <div id="q-header" class="p-5 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div id="q-icon" class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-calculator"></i>
+                    </div>
+                    <div>
+                        <span id="q-subject-name" class="font-game text-lg tracking-wide block leading-none">Matemáticas</span>
+                        <span id="q-wedge-badge" class="text-xs bg-amber-400 text-slate-900 font-bold px-2 py-0.5 rounded-full inline-block mt-1">
+                            <i class="fa-solid fa-star"></i> ¡PREGUNTA DE QUESITO!
+                        </span>
+                    </div>
+                </div>
+                <span class="text-xs font-bold uppercase bg-black/20 px-3 py-1 rounded-full">5º Primaria</span>
+            </div>
+
+            <!-- Cuerpo de la pregunta -->
+            <div class="p-6">
+                <p id="q-text" class="text-lg sm:text-xl font-bold text-slate-800 mb-6 leading-snug">
+                    ¿Cuál es el resultado de multiplicar 25 x 4?
+                </p>
+
+                <!-- Opciones de respuesta -->
+                <div id="q-options" class="space-y-3">
+                    <!-- Botones generados dinámicamente -->
+                </div>
+
+                <!-- Mensaje de retroalimentación -->
+                <div id="q-feedback" class="mt-5 p-4 rounded-2xl hidden">
+                    <p id="q-feedback-title" class="font-bold text-base mb-1"></p>
+                    <p id="q-feedback-explanation" class="text-sm"></p>
+                    <button onclick="closeQuestionModal()" class="btn-game mt-4 w-full py-3 rounded-xl bg-slate-800 text-white font-bold">
+                        Continuar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE VICTORIA -->
+    <div id="victory-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-8 text-center shadow-2xl border-4 border-amber-400">
+            <div class="w-24 h-24 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center text-5xl mx-auto mb-4 animate-bounce">
+                <i class="fa-solid fa-crown"></i>
+            </div>
+            <h2 class="text-3xl font-game font-bold text-slate-900 mb-2">¡ENHORABUENA!</h2>
+            <p id="winner-text" class="text-lg text-slate-600 mb-6">
+                <strong class="text-indigo-600">Jugador 1</strong> ha conseguido todos los quesitos y ha ganado la partida.
+            </p>
+            <button onclick="openConfigModal()" class="btn-game w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 text-white font-game text-lg">
+                Jugar Otra Partida
+            </button>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. DEFINICIÓN DE ÁREAS CURRICULARES (5º DE PRIMARIA)
+           ========================================================================== */
+        const SUBJECTS = {
+            matematicas: {
+                id: 'matematicas',
+                name: 'Matemáticas',
+                color: '#3b82f6', // Azul
+                bgLight: 'bg-blue-50',
+                textCol: 'text-blue-700',
+                borderCol: 'border-blue-200',
+                icon: 'fa-calculator'
+            },
+            lengua: {
+                id: 'lengua',
+                name: 'Lengua Castellana',
+                color: '#ef4444', // Rojo
+                bgLight: 'bg-red-50',
+                textCol: 'text-red-700',
+                borderCol: 'border-red-200',
+                icon: 'fa-book-open'
+            },
+            conocimiento: {
+                id: 'conocimiento',
+                name: 'Conocimiento del Medio',
+                color: '#10b981', // Verde
+                bgLight: 'bg-emerald-50',
+                textCol: 'text-emerald-700',
+                borderCol: 'border-emerald-200',
+                icon: 'fa-earth-europe'
+            },
+            ingles: {
+                id: 'ingles',
+                name: 'Inglés (English)',
+                color: '#f59e0b', // Amarillo/Ámbar
+                bgLight: 'bg-amber-50',
+                textCol: 'text-amber-700',
+                borderCol: 'border-amber-200',
+                icon: 'fa-language'
+            },
+            frances: {
+                id: 'frances',
+                name: 'Francés (Français)',
+                color: '#8b5cf6', // Morado
+                bgLight: 'bg-purple-50',
+                textCol: 'text-purple-700',
+                borderCol: 'border-purple-200',
+                icon: 'fa-tower-observation'
+            }
+        };
+
+        /* ==========================================================================
+           2. BANCO DE PREGUNTAS DE 5º DE PRIMARIA
+           Nota: En el futuro puedes sustituir o ampliar este objeto cargando 
+           archivos JSON desde tu repositorio de GitHub mediante fetch().
+           ========================================================================== */
+        const QUESTION_BANK = {
+            matematicas: [
+                {
+                    q: "¿Cómo se llama el triángulo que tiene todos sus lados iguales?",
+                    options: ["Isósceles", "Equilátero", "Escaleno", "Rectángulo"],
+                    answer: 1,
+                    explanation: "El triángulo equilátero tiene sus 3 lados y sus 3 ángulos iguales (60º cada uno)."
+                },
+                {
+                    q: "Si una pizza se divide en 8 partes iguales y te comes 3, ¿qué fracción queda?",
+                    options: ["3/8", "5/8", "8/3", "5/3"],
+                    answer: 1,
+                    explanation: "Si había 8/8 y te comes 3/8, quedan 8 - 3 = 5 octavos (5/8)."
+                },
+                {
+                    q: "¿Cuántos metros son 3,5 kilómetros?",
+                    options: ["350 metros", "3.500 metros", "35.000 metros", "35 metros"],
+                    answer: 1,
+                    explanation: "Para pasar de kilómetros a metros multiplicamos por 1.000: 3,5 × 1.000 = 3.500 m."
+                },
+                {
+                    q: "¿Cuál es el resultado de la operación combinada: 10 + 5 × 2?",
+                    options: ["30", "20", "25", "17"],
+                    answer: 1,
+                    explanation: "Según la jerarquía de operaciones, primero se hace la multiplicación (5 × 2 = 10) y luego la suma (10 + 10 = 20)."
+                },
+                {
+                    q: "¿Qué número decimal corresponde a la fracción 7/100?",
+                    options: ["0,7", "0,07", "7,00", "0,007"],
+                    answer: 1,
+                    explanation: "Siete centésimas se escribe 0,07 (dos cifras decimales)."
+                }
+            ],
+            lengua: [
+                {
+                    q: "¿Qué tipo de palabra es 'rápidamente' según su acentuación?",
+                    options: ["Aguda", "Llana", "Esdrújula", "Sobresdrújula"],
+                    answer: 2,
+                    explanation: "Los adverbios terminados en -mente conservan la tilde del adjetivo original ('rápida' es esdrújula)."
+                },
+                {
+                    q: "En la oración 'Los alumnos estudian mucho', ¿cuál es el núcleo del predicado?",
+                    options: ["Alumnos", "Los", "Estudian", "Mucho"],
+                    answer: 2,
+                    explanation: "El núcleo del predicado siempre es el verbo conjugado: 'estudian'."
+                },
+                {
+                    q: "¿Qué recurso literario consiste en atribuir cualidades humanas a animales u objetos?",
+                    options: ["Metáfora", "Personificación", "Comparación", "Hipérbole"],
+                    answer: 1,
+                    explanation: "La personificación da características humanas a seres inanimados o animales (ej. 'el viento susurraba')."
+                },
+                {
+                    q: "¿Cuál de estas palabras es un determinante posesivo?",
+                    options: ["Aquel", "Nuestros", "Varios", "Tres"],
+                    answer: 1,
+                    explanation: "'Nuestros' indica pertenencia o posesión respecto a un sustantivo."
+                },
+                {
+                    q: "¿Cómo se llaman las palabras que se escriben igual pero tienen distinto significado?",
+                    options: ["Sinónimas", "Antónimas", "Polisémicas", "Derivadas"],
+                    answer: 2,
+                    explanation: "Las palabras polisémicas tienen varios significados, como 'banco' (asiento, entidad financiera o grupo de peces)."
+                }
+            ],
+            conocimiento: [
+                {
+                    q: "¿Qué aparato del cuerpo humano se encarga de transformar los alimentos en nutrientes?",
+                    options: ["Aparato respiratorio", "Aparato digestivo", "Aparato circulatorio", "Aparato excretor"],
+                    answer: 1,
+                    explanation: "El aparato digestivo realiza la digestión para obtener los nutrientes necesarios para nuestras células."
+                },
+                {
+                    q: "¿Cuál es el pico más alto de la Península Ibérica?",
+                    options: ["Teide", "Aneto", "Mulhacén", "Peñalara"],
+                    answer: 2,
+                    explanation: "El Mulhacén (3.479 m) en Sierra Nevada es el más alto de la Península. El Teide es el más alto de toda España."
+                },
+                {
+                    q: "¿Qué función cumplen las raíces de una planta?",
+                    options: ["Realizar la fotosíntesis", "Absorber agua y sales minerales", "Producir semillas", "Atraer insectos"],
+                    answer: 1,
+                    explanation: "Las raíces fijan la planta al suelo y absorben agua y sales minerales (savia bruta)."
+                },
+                {
+                    q: "¿Qué planeta del Sistema Solar es conocido como el 'planeta rojo'?",
+                    options: ["Venus", "Júpiter", "Marte", "Saturno"],
+                    answer: 2,
+                    explanation: "Marte tiene un color rojizo debido al óxido de hierro presente en su superficie."
+                },
+                {
+                    q: "¿En qué edad de la Historia se produjo el descubrimiento de América en 1492?",
+                    options: ["Edad Antigua", "Edad Media", "Edad Moderna", "Edad Contemporánea"],
+                    answer: 2,
+                    explanation: "El año 1492 marca el fin de la Edad Media y el inicio de la Edad Moderna."
+                }
+            ],
+            ingles: [
+                {
+                    q: "How do you say '¿Qué hora es?' in English?",
+                    options: ["What time is it?", "Where are you?", "How old are you?", "What day is today?"],
+                    answer: 0,
+                    explanation: "'What time is it?' es la forma correcta de preguntar la hora en inglés."
+                },
+                {
+                    q: "Complete the sentence: 'She _____ playing football in the park now.'",
+                    options: ["am", "is", "are", "be"],
+                    answer: 1,
+                    explanation: "Con el pronombre 'She' (3ª persona del singular) usamos 'is' en Present Continuous."
+                },
+                {
+                    q: "Which of these animals is a mammal that lives in the ocean?",
+                    options: ["Shark", "Dolphin", "Octopus", "Crab"],
+                    answer: 1,
+                    explanation: "The dolphin (delfín) is a marine mammal; sharks are fish."
+                },
+                {
+                    q: "What is the opposite of 'expensive'?",
+                    options: ["Big", "Fast", "Cheap", "Heavy"],
+                    answer: 2,
+                    explanation: "'Expensive' significa caro, y su contrario es 'cheap' (barato)."
+                },
+                {
+                    q: "Translate into English: 'Hay tres libros encima de la mesa'.",
+                    options: ["There is three books on the table", "There are three books on the table", "There are three books under the table", "They are three books in the table"],
+                    answer: 1,
+                    explanation: "Para plural usamos 'There are' y para indicar 'encima de' usamos 'on'."
+                }
+            ],
+            frances: [
+                {
+                    q: "¿Cómo se dice 'Buenos días / Hola' en francés?",
+                    options: ["Bonsoir", "Bonjour", "Au revoir", "Merci"],
+                    answer: 1,
+                    explanation: "'Bonjour' se utiliza para saludar durante el día en francés."
+                },
+                {
+                    q: "¿Qué número es 'quinze' en español?",
+                    options: ["5", "15", "50", "14"],
+                    answer: 1,
+                    explanation: "'Quinze' significa 15 (cinco es 'cinq' y cincuenta es 'cinquante')."
+                },
+                {
+                    q: "¿De qué color es 'le ciel' cuando hace buen tiempo ('bleu')?",
+                    options: ["Rojo", "Verde", "Azul", "Amarillo"],
+                    answer: 2,
+                    explanation: "'Bleu' significa azul en francés."
+                },
+                {
+                    q: "Completa la presentación: 'Je _____ Pierre' (Yo me llamo Pierre).",
+                    options: ["suis", "m'appelle", "ai", "vais"],
+                    answer: 1,
+                    explanation: "'Je m'appelle...' significa 'Yo me llamo...'."
+                },
+                {
+                    q: "¿Qué día de la semana va después de 'Lundi'?",
+                    options: ["Mercredi", "Mardi", "Jeudi", "Dimanche"],
+                    answer: 1,
+                    explanation: "Los días de la semana son: Lundi (lunes), Mardi (martes), Mercredi (miércoles)..."
+                }
+            ]
+        };
+
+        /* ==========================================================================
+           3. ESTADO GLOBAL DEL JUEGO Y CONFIGURACIÓN
+           ========================================================================== */
+        const PLAYER_COLORS = [
+            { name: 'Equipo Azul', hex: '#2563eb', bg: 'bg-blue-600' },
+            { name: 'Equipo Rojo', hex: '#dc2626', bg: 'bg-red-600' },
+            { name: 'Equipo Verde', hex: '#059669', bg: 'bg-emerald-600' },
+            { name: 'Equipo Naranja', hex: '#d97706', bg: 'bg-amber-600' }
+        ];
+
+        let gameState = {
+            players: [],
+            activeSubjects: ['matematicas', 'lengua', 'conocimiento', 'ingles', 'frances'],
+            currentPlayerIdx: 0,
+            diceValue: 0,
+            phase: 'ROLL', // 'ROLL', 'MOVE', 'QUESTION', 'GAMEOVER'
+            boardCells: [],
+            validMoves: [],
+            currentQuestion: null,
+            currentCellIsWedge: false,
+            soundEnabled: true,
+            usedQuestions: {} // Evita repetir preguntas hasta agotar el banco
+        };
+
+        let selectedPlayerCount = 2;
+
+        /* ==========================================================================
+           4. EFECTOS DE SONIDO CON TONE.JS
+           ========================================================================== */
+        function playSound(type) {
+            if (!gameState.soundEnabled) return;
+            try {
+                if (Tone.context.state !== 'running') Tone.start();
+                const synth = new Tone.Synth().toDestination();
+                
+                if (type === 'dice') {
+                    synth.triggerAttackRelease("C5", "32n");
+                } else if (type === 'move') {
+                    synth.triggerAttackRelease("E5", "16n");
+                } else if (type === 'correct') {
+                    const now = Tone.now();
+                    synth.triggerAttackRelease("C5", "16n", now);
+                    synth.triggerAttackRelease("E5", "16n", now + 0.1);
+                    synth.triggerAttackRelease("G5", "8n", now + 0.2);
+                } else if (type === 'wrong') {
+                    const now = Tone.now();
+                    synth.triggerAttackRelease("A3", "16n", now);
+                    synth.triggerAttackRelease("F3", "8n", now + 0.15);
+                } else if (type === 'win') {
+                    const now = Tone.now();
+                    synth.triggerAttackRelease("C5", "16n", now);
+                    synth.triggerAttackRelease("E5", "16n", now + 0.1);
+                    synth.triggerAttackRelease("G5", "16n", now + 0.2);
+                    synth.triggerAttackRelease("C6", "4n", now + 0.3);
+                }
+            } catch (e) {
+                console.warn("Audio no disponible:", e);
+            }
+        }
+
+        function toggleSound() {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            const icon = document.getElementById('icon-sound');
+            icon.className = gameState.soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-slate-400';
+        }
+
+        /* ==========================================================================
+           5. LÓGICA DEL MODAL DE CONFIGURACIÓN
+           ========================================================================== */
+        function initConfigUI() {
+            setPlayerCount(2);
+            
+            // Renderizar checkboxes de áreas
+            const container = document.getElementById('subjects-checkboxes');
+            container.innerHTML = '';
+            Object.values(SUBJECTS).forEach(subj => {
+                const isChecked = gameState.activeSubjects.includes(subj.id);
+                container.innerHTML += `
+                    <label class="flex items-center gap-3 p-3 rounded-2xl border-2 cursor-pointer transition select-none ${isChecked ? 'border-indigo-500 bg-indigo-50/50' : 'border-slate-200 hover:bg-slate-50'}" onclick="updateSubjectLabelStyle(this)">
+                        <input type="checkbox" name="subject" value="${subj.id}" ${isChecked ? 'checked' : ''} class="w-5 h-5 accent-indigo-600 rounded">
+                        <span class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-sm" style="background-color: ${subj.color}">
+                            <i class="fa-solid ${subj.icon}"></i>
+                        </span>
+                        <span class="font-bold text-slate-800 text-sm">${subj.name}</span>
+                    </label>
+                `;
+            });
+        }
+
+        function updateSubjectLabelStyle(label) {
+            setTimeout(() => {
+                const cb = label.querySelector('input');
+                if (cb.checked) {
+                    label.classList.add('border-indigo-500', 'bg-indigo-50/50');
+                    label.classList.remove('border-slate-200');
+                } else {
+                    label.classList.remove('border-indigo-500', 'bg-indigo-50/50');
+                    label.classList.add('border-slate-200');
+                }
+            }, 10);
+        }
+
+        function toggleAllSubjects() {
+            const checkboxes = document.querySelectorAll('input[name="subject"]');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+                updateSubjectLabelStyle(cb.closest('label'));
+            });
+        }
+
+        function setPlayerCount(count) {
+            selectedPlayerCount = count;
+            document.querySelectorAll('.player-count-btn').forEach(btn => {
+                const c = parseInt(btn.dataset.count);
+                if (c === count) {
+                    btn.className = 'player-count-btn py-2.5 rounded-xl font-bold border-2 border-indigo-600 bg-indigo-600 text-white shadow-md transition';
+                } else {
+                    btn.className = 'player-count-btn py-2.5 rounded-xl font-bold border-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition';
+                }
+            });
+
+            const inputsContainer = document.getElementById('player-names-inputs');
+            inputsContainer.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const pColor = PLAYER_COLORS[i];
+                inputsContainer.innerHTML += `
+                    <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                        <span class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0" style="background-color: ${pColor.hex}">
+                            ${i + 1}
+                        </span>
+                        <input type="text" id="player-name-${i}" value="Jugador ${i + 1}" maxlength="16"
+                            class="w-full bg-transparent font-semibold text-slate-800 text-sm focus:outline-none" placeholder="Nombre...">
+                    </div>
+                `;
+            }
+        }
+
+        function openConfigModal() {
+            document.getElementById('victory-modal').classList.add('hidden');
+            document.getElementById('victory-modal').classList.remove('flex');
+            document.getElementById('config-modal').classList.remove('hidden');
+            document.getElementById('config-modal').classList.add('flex');
+        }
+
+        /* ==========================================================================
+           6. GENERACIÓN DEL TABLERO CIRCULAR DE TRIVIAL (SVG)
+           ========================================================================== */
+        function buildBoardData() {
+            // Anillo exterior de 24 casillas
+            const totalCells = 24;
+            const radius = 250;
+            const cx = 300, cy = 300;
+            const cells = [];
+
+            // Posiciones de quesitos distribuidas uniformemente (cada 4 casillas = 6 quesitos)
+            const wedgeIndices = [0, 4, 8, 12, 16, 20];
+            const activeSubjList = gameState.activeSubjects;
+
+            for (let i = 0; i < totalCells; i++) {
+                const angle = (i * 2 * Math.PI / totalCells) - (Math.PI / 2);
+                const x = cx + radius * Math.cos(angle);
+                const y = cy + radius * Math.sin(angle);
+                
+                // Asignar área ciclando sobre las áreas seleccionadas por el docente/alumno
+                const subjectId = activeSubjList[i % activeSubjList.length];
+                const isWedge = wedgeIndices.includes(i);
+
+                cells.push({
+                    index: i,
+                    x: x,
+                    y: y,
+                    subjectId: subjectId,
+                    isWedge: isWedge
+                });
+            }
+            gameState.boardCells = cells;
+        }
+
+        function renderBoard() {
+            const cellsGroup = document.getElementById('board-cells');
+            cellsGroup.innerHTML = '';
+
+            // Dibujar radios decorativos hacia los quesitos
+            gameState.boardCells.forEach(cell => {
+                if (cell.isWedge) {
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", 300);
+                    line.setAttribute("y1", 300);
+                    line.setAttribute("x2", cell.x);
+                    line.setAttribute("y2", cell.y);
+                    line.setAttribute("stroke", "#cbd5e1");
+                    line.setAttribute("stroke-width", "12");
+                    line.setAttribute("stroke-linecap", "round");
+                    cellsGroup.appendChild(line);
+                }
+            });
+
+            // Dibujar las 24 casillas
+            gameState.boardCells.forEach(cell => {
+                const subj = SUBJECTS[cell.subjectId];
+                const isValid = gameState.validMoves.includes(cell.index);
+
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                g.setAttribute("transform", `translate(${cell.x}, ${cell.y})`);
+                if (isValid) {
+                    g.classList.add('valid-move');
+                    g.onclick = () => selectTargetCell(cell.index);
+                }
+
+                // Círculo de la casilla (más grande si es quesito)
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("r", cell.isWedge ? 25 : 19);
+                circle.setAttribute("fill", subj.color);
+                circle.setAttribute("stroke", isValid ? "#facc15" : "#ffffff");
+                circle.setAttribute("stroke-width", isValid ? "5" : "3");
+                g.appendChild(circle);
+
+                // Si es casilla de quesito, dibujar una estrella blanca en el centro
+                if (cell.isWedge) {
+                    const star = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    star.setAttribute("text-anchor", "middle");
+                    star.setAttribute("dy", "5");
+                    star.setAttribute("fill", "#ffffff");
+                    star.setAttribute("font-size", "16");
+                    star.textContent = "★";
+                    g.appendChild(star);
+                }
+
+                cellsGroup.appendChild(g);
+            });
+
+            renderTokens();
+        }
+
+        function renderTokens() {
+            const tokensGroup = document.getElementById('board-tokens');
+            tokensGroup.innerHTML = '';
+
+            // Agrupar jugadores por casilla para evitar que se tapen si coinciden
+            const cellOccupants = {};
+            gameState.players.forEach((p, idx) => {
+                if (!cellOccupants[p.position]) cellOccupants[p.position] = [];
+                cellOccupants[p.position].push({ player: p, idx });
+            });
+
+            Object.entries(cellOccupants).forEach(([posStr, occupants]) => {
+                const cell = gameState.boardCells[parseInt(posStr)];
+                if (!cell) return;
+
+                occupants.forEach((occ, i) => {
+                    // Pequeño desplazamiento si hay varios jugadores en la misma casilla
+                    const offsetAngle = (i * 2 * Math.PI) / occupants.length;
+                    const offsetDist = occupants.length > 1 ? 9 : 0;
+                    const tx = cell.x + offsetDist * Math.cos(offsetAngle);
+                    const ty = cell.y + offsetDist * Math.sin(offsetAngle);
+
+                    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    g.setAttribute("transform", `translate(${tx}, ${ty})`);
+                    g.style.transition = "transform 0.4s ease";
+
+                    const tokenCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    tokenCircle.setAttribute("r", "12");
+                    tokenCircle.setAttribute("fill", occ.player.color);
+                    tokenCircle.setAttribute("stroke", "#ffffff");
+                    tokenCircle.setAttribute("stroke-width", "2.5");
+                    g.appendChild(tokenCircle);
+
+                    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    label.setAttribute("text-anchor", "middle");
+                    label.setAttribute("dy", "4");
+                    label.setAttribute("fill", "#ffffff");
+                    label.setAttribute("font-family", "Fredoka");
+                    label.setAttribute("font-size", "11");
+                    label.setAttribute("font-weight", "bold");
+                    label.textContent = occ.idx + 1;
+                    g.appendChild(label);
+
+                    tokensGroup.appendChild(g);
+                });
+            });
+        }
+
+        /* ==========================================================================
+           7. INICIO Y FLUJO DE LA PARTIDA
+           ========================================================================== */
+        function startGame() {
+            const checkedBoxes = document.querySelectorAll('input[name="subject"]:checked');
+            const selectedSubjs = Array.from(checkedBoxes).map(cb => cb.value);
+
+            if (selectedSubjs.length === 0) {
+                document.getElementById('subject-error').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('subject-error').classList.add('hidden');
+
+            gameState.activeSubjects = selectedSubjs;
+            gameState.players = [];
+            gameState.usedQuestions = {};
+
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                const nameInput = document.getElementById(`player-name-${i}`).value.trim();
+                gameState.players.push({
+                    id: i,
+                    name: nameInput || `Jugador ${i + 1}`,
+                    color: PLAYER_COLORS[i].hex,
+                    position: (i * 4) % 24, // Salida distribuida en casillas de quesito
+                    wedges: [] // IDs de las áreas ganadas
+                });
+            }
+
+            gameState.currentPlayerIdx = 0;
+            gameState.phase = 'ROLL';
+            gameState.validMoves = [];
+
+            document.getElementById('config-modal').classList.add('hidden');
+            document.getElementById('config-modal').classList.remove('flex');
+
+            buildBoardData();
+            renderBoard();
+            updateUI();
+        }
+
+        function updateUI() {
+            const currentPlayer = gameState.players[gameState.currentPlayerIdx];
+            
+            // Banner jugador actual
+            const banner = document.getElementById('current-player-banner');
+            banner.style.background = `linear-gradient(135deg, ${currentPlayer.color}, #1e293b)`;
+            document.getElementById('current-player-avatar').textContent = gameState.currentPlayerIdx + 1;
+            document.getElementById('current-player-name').textContent = currentPlayer.name;
+            
+            // Badge de áreas activas
+            document.getElementById('active-subjects-badge').textContent = 
+                gameState.activeSubjects.length === 5 ? 'Todas las áreas (5)' : `${gameState.activeSubjects.length} área(s) elegida(s)`;
+
+            // Botón de tirar dado y mensajes de estado
+            const btnRoll = document.getElementById('btn-roll');
+            const statusText = document.getElementById('game-status-text');
+            const moveHint = document.getElementById('move-hint');
+
+            if (gameState.phase === 'ROLL') {
+                btnRoll.disabled = false;
+                btnRoll.classList.remove('opacity-50', 'cursor-not-allowed');
+                statusText.textContent = '¡Te toca! Tira el dado virtual.';
+                moveHint.classList.add('hidden');
+            } else if (gameState.phase === 'MOVE') {
+                btnRoll.disabled = true;
+                btnRoll.classList.add('opacity-50', 'cursor-not-allowed');
+                statusText.textContent = `Has sacado un ${gameState.diceValue}. ¡Elige dirección en el tablero!`;
+                moveHint.classList.remove('hidden');
+            }
+
+            // Actualizar marcador y quesitos de cada jugador
+            const scoreboard = document.getElementById('players-scoreboard');
+            scoreboard.innerHTML = '';
+            gameState.players.forEach((p, idx) => {
+                const isTurn = idx === gameState.currentPlayerIdx;
+                let wedgesHTML = '';
+                
+                gameState.activeSubjects.forEach(subjId => {
+                    const subj = SUBJECTS[subjId];
+                    const hasWedge = p.wedges.includes(subjId);
+                    wedgesHTML += `
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs border-2 transition-all"
+                             style="background-color: ${hasWedge ? subj.color : '#f1f5f9'}; border-color: ${hasWedge ? subj.color : '#cbd5e1'}; color: ${hasWedge ? '#fff' : '#94a3b8'}"
+                             title="${subj.name}: ${hasWedge ? '¡Conseguido!' : 'Pendiente'}">
+                            <i class="fa-solid ${subj.icon}"></i>
+                        </div>
+                    `;
+                });
+
+                scoreboard.innerHTML += `
+                    <div class="p-3 rounded-2xl border-2 transition-all ${isTurn ? 'border-indigo-400 bg-indigo-50/40 shadow-sm' : 'border-slate-100 bg-slate-50/60'}">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center" style="background-color: ${p.color}">
+                                    ${idx + 1}
+                                </span>
+                                <span class="font-bold text-sm text-slate-800">${p.name}</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-500">${p.wedges.length}/${gameState.activeSubjects.length} quesitos</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            ${wedgesHTML}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Leyenda de áreas
+            const legend = document.getElementById('subjects-legend');
+            legend.innerHTML = '';
+            gameState.activeSubjects.forEach(subjId => {
+                const subj = SUBJECTS[subjId];
+                legend.innerHTML += `
+                    <div class="flex items-center gap-2.5 p-2 rounded-xl ${subj.bgLight} border ${subj.borderCol}">
+                        <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shrink-0" style="background-color: ${subj.color}">
+                            <i class="fa-solid ${subj.icon}"></i>
+                        </span>
+                        <span class="text-xs font-bold ${subj.textCol}">${subj.name}</span>
+                    </div>
+                `;
+            });
+        }
+
+        /* ==========================================================================
+           8. MECÁNICA DEL DADO Y MOVIMIENTO
+           ========================================================================== */
+        const DICE_ICONS = [
+            'fa-dice-one', 'fa-dice-two', 'fa-dice-three',
+            'fa-dice-four', 'fa-dice-five', 'fa-dice-six'
+        ];
+
+        function rollDice() {
+            if (gameState.phase !== 'ROLL') return;
+
+            const diceBox = document.getElementById('dice-box');
+            const diceIcon = document.getElementById('dice-icon');
+            const btnRoll = document.getElementById('btn-roll');
+
+            btnRoll.disabled = true;
+            diceBox.classList.add('rolling');
+
+            let ticks = 0;
+            const interval = setInterval(() => {
+                const rand = Math.floor(Math.random() * 6);
+                diceIcon.className = `fa-solid ${DICE_ICONS[rand]}`;
+                playSound('dice');
+                ticks++;
+
+                if (ticks >= 10) {
+                    clearInterval(interval);
+                    diceBox.classList.remove('rolling');
+                    
+                    const finalRoll = Math.floor(Math.random() * 6) + 1;
+                    diceIcon.className = `fa-solid ${DICE_ICONS[finalRoll - 1]}`;
+                    gameState.diceValue = finalRoll;
+                    
+                    calculateValidMoves(finalRoll);
+                }
+            }, 70);
+        }
+
+        function calculateValidMoves(steps) {
+            const currentPlayer = gameState.players[gameState.currentPlayerIdx];
+            const total = gameState.boardCells.length; // 24
+
+            // En Trivial puedes avanzar en sentido horario o antihorario
+            const forward = (currentPlayer.position + steps) % total;
+            const backward = (currentPlayer.position - steps + total) % total;
+
+            gameState.validMoves = forward === backward ? [forward] : [forward, backward];
+            gameState.phase = 'MOVE';
+
+            renderBoard();
+            updateUI();
+        }
+
+        function selectTargetCell(cellIndex) {
+            if (gameState.phase !== 'MOVE' || !gameState.validMoves.includes(cellIndex)) return;
+
+            playSound('move');
+            const currentPlayer = gameState.players[gameState.currentPlayerIdx];
+            currentPlayer.position = cellIndex;
+            gameState.validMoves = [];
+            gameState.phase = 'QUESTION';
+
+            renderBoard();
+            updateUI();
+
+            // Abrir modal de pregunta correspondiente al color de la casilla
+            const cell = gameState.boardCells[cellIndex];
+            setTimeout(() => showQuestion(cell.subjectId, cell.isWedge), 350);
+        }
+
+        /* ==========================================================================
+           9. SISTEMA DE PREGUNTAS Y EVALUACIÓN
+           ========================================================================== */
+        function getNextQuestion(subjectId) {
+            const pool = QUESTION_BANK[subjectId];
+            if (!gameState.usedQuestions[subjectId]) gameState.usedQuestions[subjectId] = [];
+
+            // Filtrar índices no usados aún
+            let availableIndices = pool.map((_, idx) => idx).filter(idx => !gameState.usedQuestions[subjectId].includes(idx));
+            
+            // Si ya se han hecho todas, reiniciar el ciclo de esa área
+            if (availableIndices.length === 0) {
+                gameState.usedQuestions[subjectId] = [];
+                availableIndices = pool.map((_, idx) => idx);
+            }
+
+            const chosenIdx = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            gameState.usedQuestions[subjectId].push(chosenIdx);
+            return pool[chosenIdx];
+        }
+
+        function showQuestion(subjectId, isWedge) {
+            const subj = SUBJECTS[subjectId];
+            const questionObj = getNextQuestion(subjectId);
+
+            gameState.currentQuestion = { ...questionObj, subjectId };
+            gameState.currentCellIsWedge = isWedge;
+
+            // Configurar cabecera del modal
+            const header = document.getElementById('q-header');
+            header.style.backgroundColor = subj.color;
+            document.getElementById('q-icon').innerHTML = `<i class="fa-solid ${subj.icon}"></i>`;
+            document.getElementById('q-subject-name').textContent = subj.name;
+
+            const wedgeBadge = document.getElementById('q-wedge-badge');
+            if (isWedge) {
+                wedgeBadge.classList.remove('hidden');
+            } else {
+                wedgeBadge.classList.add('hidden');
+            }
+
+            document.getElementById('q-text').textContent = questionObj.q;
+
+            // Renderizar opciones
+            const optionsContainer = document.getElementById('q-options');
+            optionsContainer.innerHTML = '';
+            const letters = ['A', 'B', 'C', 'D'];
+
+            questionObj.options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'q-opt-btn w-full text-left p-4 rounded-2xl border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/40 font-semibold text-slate-700 transition flex items-center gap-3';
+                btn.innerHTML = `
+                    <span class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 font-bold flex items-center justify-center shrink-0">${letters[idx]}</span>
+                    <span>${optText}</span>
+                `;
+                btn.onclick = () => checkAnswer(idx, btn);
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById('q-feedback').classList.add('hidden');
+            const modal = document.getElementById('question-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function checkAnswer(selectedIdx, clickedBtn) {
+            const q = gameState.currentQuestion;
+            const isCorrect = selectedIdx === q.answer;
+            const buttons = document.querySelectorAll('.q-opt-btn');
+
+            // Deshabilitar todos los botones
+            buttons.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (idx === q.answer) {
+                    btn.classList.remove('border-slate-200');
+                    btn.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-900');
+                } else if (idx === selectedIdx && !isCorrect) {
+                    btn.classList.remove('border-slate-200');
+                    btn.classList.add('border-rose-500', 'bg-rose-50', 'text-rose-900');
+                }
+            });
+
+            const feedbackBox = document.getElementById('q-feedback');
+            const feedbackTitle = document.getElementById('q-feedback-title');
+            const feedbackExp = document.getElementById('q-feedback-explanation');
+
+            feedbackBox.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-900', 'bg-rose-100', 'text-rose-900');
+
+            const currentPlayer = gameState.players[gameState.currentPlayerIdx];
+
+            if (isCorrect) {
+                playSound('correct');
+                feedbackBox.classList.add('bg-emerald-100', 'text-emerald-900');
+                
+                let extraMsg = "¡Respuesta correcta! Sigues tirando.";
+                if (gameState.currentCellIsWedge && !currentPlayer.wedges.includes(q.subjectId)) {
+                    currentPlayer.wedges.push(q.subjectId);
+                    extraMsg = `¡FANTÁSTICO! Has ganado el quesito de ${SUBJECTS[q.subjectId].name} y vuelves a tirar.`;
+                }
+                feedbackTitle.innerHTML = `<i class="fa-solid fa-circle-check mr-1"></i> ${extraMsg}`;
+            } else {
+                playSound('wrong');
+                feedbackBox.classList.add('bg-rose-100', 'text-rose-900');
+                feedbackTitle.innerHTML = `<i class="fa-solid fa-circle-xmark mr-1"></i> ¡Vaya! No es correcto. Pasa el turno.`;
+            }
+
+            feedbackExp.textContent = q.explanation;
+            gameState.lastAnswerCorrect = isCorrect;
+            updateUI();
+        }
+
+        function closeQuestionModal() {
+            const modal = document.getElementById('question-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            const currentPlayer = gameState.players[gameState.currentPlayerIdx];
+
+            // Comprobar si el jugador actual ha ganado todos los quesitos activos
+            if (currentPlayer.wedges.length >= gameState.activeSubjects.length) {
+                playSound('win');
+                gameState.phase = 'GAMEOVER';
+                document.getElementById('winner-text').innerHTML = 
+                    `<strong class="text-indigo-600">${currentPlayer.name}</strong> ha completado todas las áreas de 5º de Primaria y gana la partida.`;
+                const vModal = document.getElementById('victory-modal');
+                vModal.classList.remove('hidden');
+                vModal.classList.add('flex');
+                return;
+            }
+
+            // Si acertó mantiene el turno; si falló pasa al siguiente jugador
+            if (!gameState.lastAnswerCorrect) {
+                gameState.currentPlayerIdx = (gameState.currentPlayerIdx + 1) % gameState.players.length;
+            }
+
+            gameState.phase = 'ROLL';
+            updateUI();
+        }
+
+        /* ==========================================================================
+           10. ARRANQUE INICIAL
+           ========================================================================== */
+        window.onload = function() {
+            initConfigUI();
+            buildBoardData();
+            renderBoard();
+        };
+    </script>
+</body>
+</html>
