@@ -52,12 +52,20 @@
 
         /* Pulsación suave para casillas válidas */
         @keyframes pulseHighlight {
-            0%, 100% { stroke-width: 4; filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.9)); }
-            50% { stroke-width: 7; filter: drop-shadow(0 0 14px rgba(250, 204, 21, 1)); }
+            0%, 100% { stroke-width: 5; filter: drop-shadow(0 0 8px rgba(250, 204, 21, 1)); }
+            50% { stroke-width: 9; filter: drop-shadow(0 0 20px rgba(255, 255, 255, 1)); }
+        }
+        @keyframes radarRing {
+            0% { r: 22; opacity: 0.95; stroke-width: 4; }
+            100% { r: 36; opacity: 0; stroke-width: 1; }
         }
         .valid-move {
-            animation: pulseHighlight 1.2s infinite;
+            animation: pulseHighlight 0.85s infinite;
             cursor: pointer;
+        }
+        .radar-pulse {
+            animation: radarRing 1.1s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
+            pointer-events: none;
         }
 
         /* Scrollbar personalizada */
@@ -160,16 +168,17 @@
 
             <!-- Contenedor fluido del tablero SVG -->
             <div class="w-full max-w-[620px] aspect-square relative flex items-center justify-center">
-                <svg id="trivial-board" viewBox="0 0 600 600" class="w-full h-full drop-shadow-md">
-                    <!-- Fondo decorativo del tablero -->
-                    <circle cx="300" cy="300" r="290" fill="#f8fafc" stroke="#e2e8f0" stroke-width="6"/>
-                    <circle cx="300" cy="300" r="215" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="3" stroke-dasharray="8 6"/>
+                <svg id="trivial-board" viewBox="0 0 600 600" class="w-full h-full drop-shadow-xl">
+                    <!-- Fondo oscuro de alto contraste del tablero -->
+                    <circle cx="300" cy="300" r="292" fill="#0f172a" stroke="#334155" stroke-width="6"/>
+                    <circle cx="300" cy="300" r="250" fill="none" stroke="#334155" stroke-width="18" opacity="0.65"/>
+                    <circle cx="300" cy="300" r="205" fill="#1e293b" stroke="#475569" stroke-width="3" stroke-dasharray="8 6"/>
                     
                     <!-- Grupo donde se dibujan las casillas y conexiones -->
                     <g id="board-cells"></g>
 
                     <!-- Centro del tablero -->
-                    <circle cx="300" cy="300" r="68" fill="url(#centerGrad)" stroke="#ffffff" stroke-width="5"/>
+                    <circle cx="300" cy="300" r="68" fill="url(#centerGrad)" stroke="#f8fafc" stroke-width="4"/>
                     <defs>
                         <linearGradient id="centerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                             <stop offset="0%" stop-color="#4f46e5"/>
@@ -355,27 +364,62 @@
             matematicas: [
                 { q: "¿Cuál es el resultado de la operación combinada: 24 − 6 × 3 + 2?", options: ["56", "8", "4", "12"], answer: 1, explanation: "Primero multiplicamos: 6 × 3 = 18. Luego de izquierda a derecha: 24 − 18 + 2 = 8." },
                 { q: "¿Cuál de los siguientes números es primo?", options: ["15", "21", "23", "27"], answer: 2, explanation: "23 solo es divisible por 1 y por sí mismo." },
-                { q: "Calcula los 3/5 de 40 alumnos.", options: ["15 alumnos", "24 alumnos", "20 alumnos", "30 alumnos"], answer: 1, explanation: "40 : 5 = 8; y 8 × 3 = 24 alumnos." }
+                { q: "Calcula los 3/5 de 40 alumnos.", options: ["15 alumnos", "24 alumnos", "20 alumnos", "30 alumnos"], answer: 1, explanation: "40 : 5 = 8; y 8 × 3 = 24 alumnos." },
+                { q: "¿Qué valor tiene la cifra 7 en el número 4.725.810?", options: ["70.000 unidades", "700.000 unidades", "7.000.000 unidades", "7.000 unidades"], answer: 1, explanation: "La cifra 7 ocupa el lugar de las centenas de millar (700.000)." },
+                { q: "¿Cuál es el valor de la potencia 3⁴?", options: ["12", "27", "81", "64"], answer: 2, explanation: "3⁴ = 3 × 3 × 3 × 3 = 81." },
+                { q: "¿Cuál es el mínimo común múltiplo (m.c.m.) de 4 y 6?", options: ["24", "12", "2", "10"], answer: 1, explanation: "El menor múltiplo común distinto de cero de 4 y 6 es 12." },
+                { q: "¿Cuál es el resultado de restar 10 − 4,35?", options: ["6,35", "5,65", "6,65", "5,75"], answer: 1, explanation: "10,00 − 4,35 = 5,65." },
+                { q: "Una camiseta cuesta 30 € y tiene un descuento del 10%. ¿Cuánto pagaremos?", options: ["20 €", "27 €", "3 €", "33 €"], answer: 1, explanation: "El 10% de 30 € son 3 €; 30 − 3 = 27 €." },
+                { q: "¿Cuántos segundos hay en 1 hora?", options: ["60 segundos", "360 segundos", "3.600 segundos", "6.000 segundos"], answer: 2, explanation: "60 minutos × 60 segundos = 3.600 segundos." },
+                { q: "¿Cuál es el área de un triángulo de 10 cm de base y 6 cm de altura?", options: ["60 cm²", "30 cm²", "16 cm²", "32 cm²"], answer: 1, explanation: "(10 × 6) : 2 = 30 cm²." }
             ],
             lengua: [
                 { q: "¿Cuándo llevan tilde las palabras esdrújulas?", options: ["Solo si terminan en vocal", "Siempre llevan tilde", "Nunca llevan tilde", "Si acaban en -n o -s"], answer: 1, explanation: "Todas las palabras esdrújulas y sobresdrújulas llevan tilde siempre." },
                 { q: "¿Qué recurso literario aparece en 'Sus dientes son perlas blancas'?", options: ["Comparación", "Metáfora", "Hipérbole", "Aliteración"], answer: 1, explanation: "La metáfora identifica un término real (dientes) con uno imaginario (perlas)." },
-                { q: "¿Cuál de las lenguas de España NO procede del latín?", options: ["El gallego", "El catalán", "El euskera", "El castellano"], answer: 2, explanation: "El euskera es una lengua prerromana que no deriva del latín." }
+                { q: "¿Cuál de las lenguas de España NO procede del latín?", options: ["El gallego", "El catalán", "El euskera", "El castellano"], answer: 2, explanation: "El euskera es una lengua prerromana que no deriva del latín." },
+                { q: "¿Cómo se llama el sustantivo que nombra en singular a un conjunto de seres (como 'rebaño' o 'bandada')?", options: ["Sustantivo abstracto", "Sustantivo colectivo", "Sustantivo propio", "Sustantivo epiceno"], answer: 1, explanation: "Los sustantivos colectivos designan en singular a un conjunto de elementos." },
+                { q: "¿Cuándo llevan tilde las palabras agudas?", options: ["Siempre", "Cuando terminan en vocal, -n o -s", "Cuando no terminan en vocal", "Nunca"], answer: 1, explanation: "Las agudas llevan tilde si acaban en vocal, -n o -s (ej. camión, café)." },
+                { q: "¿Qué clase de determinante aparece en 'Vivo en el quinto piso'?", options: ["Numeral cardinal", "Numeral ordinal", "Indefinido", "Posesivo"], answer: 1, explanation: "'Quinto' expresa orden: es un numeral ordinal." },
+                { q: "¿Cuáles son las tres formas no personales del verbo?", options: ["Presente, pasado y futuro", "Infinitivo, gerundio y participio", "Indicativo, subjuntivo e imperativo", "Singular y plural"], answer: 1, explanation: "Infinitivo (cantar), gerundio (cantando) y participio (cantado)." },
+                { q: "¿Cómo se llama el sujeto que no aparece escrito pero se sobreentiende por el verbo?", options: ["Sujeto paciente", "Sujeto omitido o elíptico", "Atributo", "Predicado nominal"], answer: 1, explanation: "El sujeto omitido se deduce por la desinencia verbal." },
+                { q: "¿Qué diferencia hay entre la rima consonante y la asonante?", options: ["En la consonante coinciden vocales y consonantes desde la última vocal acentuada; en la asonante solo las vocales", "No hay diferencia", "La asonante no lleva vocales", "Solo se usan en teatro"], answer: 0, explanation: "Consonante: coinciden vocales y consonantes; asonante: solo vocales." },
+                { q: "¿Quién escribió 'Platero y yo'?", options: ["Antonio Machado", "Juan Ramón Jiménez", "Miguel de Cervantes", "Gloria Fuertes"], answer: 1, explanation: "Juan Ramón Jiménez escribió 'Platero y yo'." }
             ],
             conocimiento: [
                 { q: "¿Cuáles son las tres funciones vitales de todos los seres vivos?", options: ["Nacer, crecer y morir", "Nutrición, relación y reproducción", "Respirar, comer y dormir", "Moverse y sentir"], answer: 1, explanation: "Todos los seres vivos realizan nutrición, relación y reproducción." },
                 { q: "¿Cuál es el pico más alto de España?", options: ["El Mulhacén", "El Aneto", "El Teide", "El Torre Cerredo"], answer: 2, explanation: "El Teide (3.715 m), en Tenerife, es el pico más alto de España." },
-                { q: "¿Qué proceso permite a las plantas fabricar su alimento con la luz del Sol?", options: ["Respiración", "Fotosíntesis", "Polinización", "Germinación"], answer: 1, explanation: "Mediante la fotosíntesis las plantas producen materia orgánica y liberan oxígeno." }
+                { q: "¿Qué proceso permite a las plantas fabricar su alimento con la luz del Sol?", options: ["Respiración", "Fotosíntesis", "Polinización", "Germinación"], answer: 1, explanation: "Mediante la fotosíntesis las plantas producen materia orgánica y liberan oxígeno." },
+                { q: "¿Cuál es el orden de organización de un ser vivo pluricelular?", options: ["Órgano → Célula → Tejido", "Célula → Tejido → Órgano → Aparato → Organismo", "Tejido → Célula → Órgano", "Célula → Órgano → Tejido"], answer: 1, explanation: "Célula, tejido, órgano, aparato o sistema y organismo." },
+                { q: "¿Qué dos partes forman el sistema nervioso central?", options: ["Nervios y músculos", "El encéfalo y la médula espinal", "Corazón y pulmones", "Cráneo y costillas"], answer: 1, explanation: "El sistema nervioso central consta de encéfalo y médula espinal." },
+                { q: "¿Cuál es el río más largo de la Península Ibérica?", options: ["El Ebro", "El Tajo", "El Guadalquivir", "El Duero"], answer: 1, explanation: "El río Tajo mide más de 1.000 km." },
+                { q: "¿En qué tres etapas se divide la Prehistoria?", options: ["Antigua, Media y Moderna", "Paleolítico, Neolítico y Edad de los Metales", "Cobre, Bronce y Hierro", "Íberos, Celtas y Romanos"], answer: 1, explanation: "Paleolítico, Neolítico y Edad de los Metales." },
+                { q: "¿En qué año entraron los musulmanes en la Península Ibérica?", options: ["1492", "711", "476", "1212"], answer: 1, explanation: "En el año 711 derrotaron al rey visigodo Rodrigo." },
+                { q: "¿Cómo se llama el cambio de estado de líquido a gas?", options: ["Fusión", "Vaporización", "Condensación", "Solidificación"], answer: 1, explanation: "El paso de líquido a gas se denomina vaporización." },
+                { q: "¿Qué instrumento meteorológico mide la cantidad de lluvia caída?", options: ["Anemómetro", "Pluviómetro", "Barómetro", "Termómetro"], answer: 1, explanation: "El pluviómetro mide las precipitaciones." }
             ],
             ingles: [
                 { q: "Complete: 'My brother _____ to school by bus every morning.'", options: ["go", "goes", "going", "is go"], answer: 1, explanation: "En 3ª persona del singular en Present Simple añadimos '-es': 'goes'." },
                 { q: "What is the Past Simple of the irregular verb 'go'?", options: ["goed", "went", "gone", "going"], answer: 1, explanation: "El pasado simple de 'go' es 'went'." },
-                { q: "Choose the comparative: 'An elephant is _____ than a mouse.'", options: ["big", "bigger", "biggest", "more big"], answer: 1, explanation: "'Bigger than' es el comparativo correcto." }
+                { q: "Choose the comparative: 'An elephant is _____ than a mouse.'", options: ["big", "bigger", "biggest", "more big"], answer: 1, explanation: "'Bigger than' es el comparativo correcto." },
+                { q: "Complete: 'Look! The children _____ in the pool right now.'", options: ["swim", "are swimming", "is swimming", "swims"], answer: 1, explanation: "Con 'right now' usamos Present Continuous: 'are swimming'." },
+                { q: "Where do you go to borrow books to read at home?", options: ["Bookshop", "Library", "Bakery", "Chemist's"], answer: 1, explanation: "'Library' es la biblioteca." },
+                { q: "How do you say 'Las nueve menos cuarto' (8:45) in English?", options: ["Quarter past nine", "Quarter to nine", "Half past nine", "Nine o'clock"], answer: 1, explanation: "'Quarter to nine' significa las nueve menos cuarto." },
+                { q: "What is the plural of 'child'?", options: ["childs", "children", "childrens", "childes"], answer: 1, explanation: "El plural irregular de 'child' es 'children'." },
+                { q: "Choose the right modal: 'You _____ shout in the library.'", options: ["must", "mustn't", "can", "have"], answer: 1, explanation: "'Mustn't' expresa prohibición." },
+                { q: "What is the superlative of 'high'?", options: ["higher", "the highest", "most high", "high"], answer: 1, explanation: "'The highest' es el superlativo." },
+                { q: "What is the capital city of the United Kingdom?", options: ["Dublin", "London", "Edinburgh", "Cardiff"], answer: 1, explanation: "Londres ('London') es la capital del Reino Unido." }
             ],
             frances: [
                 { q: "¿Cómo se dice 'la habitación / el dormitorio' en francés?", options: ["La cuisine", "La chambre", "Le salon", "Le toit"], answer: 1, explanation: "'La chambre' significa la habitación o dormitorio." },
                 { q: "Completa: 'Le chat est _____ la boîte' (El gato está DENTRO de la caja).", options: ["sur", "dans", "sous", "devant"], answer: 1, explanation: "'Dans' significa dentro." },
-                { q: "Conjuga el verbo 'parler': 'Nous _____ français en classe'.", options: ["parlez", "parlons", "parlent", "parle"], answer: 1, explanation: "Con 'Nous' la terminación regular es '-ons': 'Nous parlons'." }
+                { q: "Conjuga el verbo 'parler': 'Nous _____ français en classe'.", options: ["parlez", "parlons", "parlent", "parle"], answer: 1, explanation: "Con 'Nous' la terminación regular es '-ons': 'Nous parlons'." },
+                { q: "¿Qué significa 'L'armoire' en español?", options: ["La cama", "El armario", "La silla", "La alfombra"], answer: 1, explanation: "'L'armoire' significa el armario." },
+                { q: "¿Cómo se dice 'encima / sobre' y 'debajo' en francés?", options: ["SUR et SOUS", "DEVANT et DERRIÈRE", "DANS et ENTRE", "À CÔTÉ et SUR"], answer: 0, explanation: "'SUR' = encima/sobre; 'SOUS' = debajo." },
+                { q: "¿Qué significan 'L'ordinateur', 'la souris', 'l'écran' y 'le clavier'?", options: ["El ordenador, el ratón, la pantalla y el teclado", "La mesa, la silla, la puerta y la ventana", "El libro, el cuaderno, el lápiz y la goma", "El sofá, el sillón, la lámpara y el espejo"], answer: 0, explanation: "Vocabulario informático de la unidad." },
+                { q: "En *Nouveaux Défis 2*, ¿qué significa 'Il a les cheveux blonds, courts et frisés'?", options: ["Tiene el pelo rubio, corto y rizado", "Tiene el pelo moreno, largo y liso", "Lleva gafas y gorra", "Es alto y delgado"], answer: 0, explanation: "'Blonds' = rubios, 'courts' = cortos, 'frisés' = rizados." },
+                { q: "¿Qué prendas de vestir son 'Une jupe' y 'Une robe'?", options: ["Una falda y un vestido", "Un pantalón y una camiseta", "Un abrigo y una bufanda", "Unos zapatos y unos calcetines"], answer: 0, explanation: "'Une jupe' = falda; 'une robe' = vestido." },
+                { q: "Completa con 'aller + à': 'Tu vas _____ cinéma et elle va _____ piscine'.", options: ["au cinéma et à la piscine", "à le cinéma et au piscine", "aux cinéma et à l' piscine", "du cinéma et de la piscine"], answer: 0, explanation: "'À + le' = 'au' (masculino) y 'à la' (femenino)." },
+                { q: "¿Qué hora es 'Il est trois heures et demie'?", options: ["Las tres y cuarto", "Las tres y media", "Las tres menos cuarto", "Las tres en punto"], answer: 1, explanation: "'Et demie' significa 'y media'." }
             ]
         };
 
@@ -387,12 +431,16 @@
             return FALLBACK_BANK[subjectId] || [];
         }
 
+        function isExternalBankLoaded(subjectId) {
+            return Boolean(window.QUESTION_BANK && Array.isArray(window.QUESTION_BANK[subjectId]) && window.QUESTION_BANK[subjectId].length > 15);
+        }
+
         /* ==========================================================================
            3. ESTADO DEL JUEGO Y SISTEMA ALEATORIO SIN REPETICIÓN ENTRE PARTIDAS
            ========================================================================== */
         const PLAYER_COLORS = ['#2563eb', '#dc2626', '#059669', '#d97706'];
         const BOARD_SIZE = 24;
-        const STORAGE_KEY_SEEN = 'trivial5_seen_questions_v1';
+        const STORAGE_KEY_SEEN = 'trivial5_seen_questions_v3';
 
         let state = {
             playerCount: 2,
@@ -406,19 +454,20 @@
             currentQuestion: null,
             currentCell: null,
             soundEnabled: true,
-            seenQuestions: loadSeenQuestions()
+            seenQuestions: loadStorageJSON(STORAGE_KEY_SEEN, {}),
+            sessionDecks: {} // Mazos barajados frescos en cada nueva partida
         };
 
-        function loadSeenQuestions() {
+        function loadStorageJSON(key, fallback) {
             try {
-                const saved = localStorage.getItem(STORAGE_KEY_SEEN);
-                return saved ? JSON.parse(saved) : {};
+                const saved = localStorage.getItem(key);
+                return saved ? JSON.parse(saved) : fallback;
             } catch (e) {
-                return {};
+                return fallback;
             }
         }
 
-        function saveSeenQuestions() {
+        function saveQuestionState() {
             try {
                 localStorage.setItem(STORAGE_KEY_SEEN, JSON.stringify(state.seenQuestions));
             } catch (e) {
@@ -428,8 +477,63 @@
 
         function resetSeenQuestions() {
             state.seenQuestions = {};
-            saveSeenQuestions();
-            showToast('Historial reiniciado: todas las preguntas vuelven a estar disponibles.');
+            state.sessionDecks = {};
+            saveQuestionState();
+            rebuildAllSessionDecks();
+            renderLegend();
+            showToast('Historial reiniciado: todas las preguntas vuelven a estar disponibles y barajadas.');
+        }
+            return FALLBACK_BANK[subjectId] || [];
+        }
+
+        /* ==========================================================================
+           3. ESTADO DEL JUEGO Y SISTEMA ALEATORIO SIN REPETICIÓN ENTRE PARTIDAS
+           ========================================================================== */
+        const PLAYER_COLORS = ['#2563eb', '#dc2626', '#059669', '#d97706'];
+        const BOARD_SIZE = 24;
+        const STORAGE_KEY_SEEN = 'trivial5_seen_questions_v2';
+        const STORAGE_KEY_DECKS = 'trivial5_shuffled_decks_v2';
+
+        let state = {
+            playerCount: 2,
+            players: [],
+            activeSubjects: ['matematicas', 'lengua', 'conocimiento', 'ingles', 'frances'],
+            currentPlayerIdx: 0,
+            diceValue: 0,
+            phase: 'ROLL', // 'ROLL' | 'MOVE' | 'QUESTION'
+            validMoves: [],
+            boardCells: [],
+            currentQuestion: null,
+            currentCell: null,
+            soundEnabled: true,
+            seenQuestions: loadStorageJSON(STORAGE_KEY_SEEN, {}),
+            shuffledDecks: loadStorageJSON(STORAGE_KEY_DECKS, {})
+        };
+
+        function loadStorageJSON(key, fallback) {
+            try {
+                const saved = localStorage.getItem(key);
+                return saved ? JSON.parse(saved) : fallback;
+            } catch (e) {
+                return fallback;
+            }
+        }
+
+        function saveQuestionState() {
+            try {
+                localStorage.setItem(STORAGE_KEY_SEEN, JSON.stringify(state.seenQuestions));
+                localStorage.setItem(STORAGE_KEY_DECKS, JSON.stringify(state.shuffledDecks));
+            } catch (e) {
+                // Ignorar si localStorage está restringido
+            }
+        }
+
+        function resetSeenQuestions() {
+            state.seenQuestions = {};
+            state.shuffledDecks = {};
+            saveQuestionState();
+            renderLegend();
+            showToast('Historial reiniciado: las 210 preguntas de cada área vuelven a estar disponibles.');
         }
 
         function showToast(msg) {
@@ -492,12 +596,18 @@
 
         function updateBankStatusBanner() {
             let total = 0;
+            let externalCount = 0;
             Object.keys(SUBJECTS).forEach(id => {
                 total += getSubjectQuestions(id).length;
+                if (isExternalBankLoaded(id)) externalCount++;
             });
             const statusText = document.getElementById('bank-status-text');
             if (statusText) {
-                statusText.innerHTML = `<strong class="text-slate-800">Banco de preguntas cargado (${total} preguntas en total):</strong> Listo para jugar en modo aleatorio sin repeticiones entre partidas.`;
+                if (externalCount === 5) {
+                    statusText.innerHTML = `<strong class="text-emerald-800">¡Los 5 archivos externos están cargados (${total} preguntas)!</strong> Modo aleatorio sin repeticiones entre partidas activado.`;
+                } else {
+                    statusText.innerHTML = `<strong class="text-slate-800">Banco activo (${total} preguntas cargadas):</strong> En GitHub asegúrate de subir <code>frances.js</code>, <code>conocimiento.js</code>, <code>matematicas.js</code>, <code>lengua.js</code> e <code>ingles.js</code> junto a este <code>index.html</code> para disponer de las +1.000 preguntas.`;
+                }
             }
         }
 
@@ -579,16 +689,21 @@
                 return;
             }
 
-            // Crear jugadores
+            // Rebarajar completamente los mazos de todas las áreas al comenzar cada partida nueva
+            rebuildAllSessionDecks();
+
+            // Crear jugadores en posiciones iniciales repartidas aleatoriamente para variar el recorrido
             state.players = [];
+            const randomOffset = secureRandomInt(BOARD_SIZE);
             for (let i = 0; i < state.playerCount; i++) {
                 const input = document.getElementById(`player-name-${i}`);
                 const name = (input && input.value.trim()) ? input.value.trim() : `Jugador ${i + 1}`;
+                const startPos = (randomOffset + i * Math.floor(BOARD_SIZE / state.playerCount)) % BOARD_SIZE;
                 state.players.push({
                     id: i,
                     name: name,
                     color: PLAYER_COLORS[i],
-                    position: 0,
+                    position: startPos,
                     wedges: [] // IDs de áreas conseguidas
                 });
             }
@@ -655,15 +770,28 @@
                     g.setAttribute('class', 'valid-move');
                     g.setAttribute('pointer-events', 'all');
                     g.onclick = () => selectTargetCell(cell.index);
+
+                    // Anillo radar animado para máxima visibilidad sobre el tablero oscuro
+                    const halo = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    halo.setAttribute('cx', cell.cx);
+                    halo.setAttribute('cy', cell.cy);
+                    halo.setAttribute('r', r + 6);
+                    halo.setAttribute('fill', 'none');
+                    halo.setAttribute('stroke', '#facc15');
+                    halo.setAttribute('class', 'radar-pulse');
+                    g.appendChild(halo);
                 }
 
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('cx', cell.cx);
                 circle.setAttribute('cy', cell.cy);
-                circle.setAttribute('r', r);
+                circle.setAttribute('r', isValid ? r + 3 : r);
                 circle.setAttribute('fill', subj.color);
-                circle.setAttribute('stroke', isValid ? '#facc15' : '#ffffff');
-                circle.setAttribute('stroke-width', isValid ? '5' : '3');
+                circle.setAttribute('stroke', isValid ? '#fde047' : '#e2e8f0');
+                circle.setAttribute('stroke-width', isValid ? '6' : '2.5');
+                if (!isValid && state.phase === 'MOVE') {
+                    circle.setAttribute('opacity', '0.45');
+                }
                 g.appendChild(circle);
 
                 if (cell.isWedge) {
@@ -677,6 +805,14 @@
                     star.setAttribute('pointer-events', 'none');
                     star.textContent = '★';
                     g.appendChild(star);
+                } else if (isValid) {
+                    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    dot.setAttribute('cx', cell.cx);
+                    dot.setAttribute('cy', cell.cy);
+                    dot.setAttribute('r', 6);
+                    dot.setAttribute('fill', '#fef08a');
+                    dot.setAttribute('pointer-events', 'none');
+                    g.appendChild(dot);
                 }
 
                 cellsGroup.appendChild(g);
@@ -802,37 +938,81 @@
         /* ==========================================================================
            8. SELECCIÓN ALEATORIA DE PREGUNTAS (FISHER-YATES) Y MODAL
            ========================================================================== */
+        function secureRandomInt(max) {
+            if (max <= 1) return 0;
+            if (window.crypto && window.crypto.getRandomValues) {
+                const array = new Uint32Array(2);
+                window.crypto.getRandomValues(array);
+                return (array[0] ^ (Date.now() & 0xffffffff)) % max;
+            }
+            return Math.floor(Math.random() * max);
+        }
+
+        function buildFreshShuffledDeck(subjectId) {
+            const pool = getSubjectQuestions(subjectId);
+            state.seenQuestions[subjectId] = state.seenQuestions[subjectId] || [];
+            let seenTexts = new Set(state.seenQuestions[subjectId]);
+
+            // Si ya salieron TODAS las preguntas del área, reiniciamos el historial de esa área
+            if (seenTexts.size >= pool.length) {
+                seenTexts.clear();
+                state.seenQuestions[subjectId] = [];
+                saveQuestionState();
+            }
+
+            const unseenIndices = [];
+            for (let i = 0; i < pool.length; i++) {
+                if (!seenTexts.has(pool[i].q)) {
+                    unseenIndices.push(i);
+                }
+            }
+
+            // Doble pasada de barajado Fisher-Yates para garantizar aleatoriedad total en cada partida
+            for (let pass = 0; pass < 2; pass++) {
+                for (let i = unseenIndices.length - 1; i > 0; i--) {
+                    const j = secureRandomInt(i + 1);
+                    [unseenIndices[i], unseenIndices[j]] = [unseenIndices[j], unseenIndices[i]];
+                }
+            }
+
+            state.sessionDecks[subjectId] = unseenIndices;
+            return unseenIndices;
+        }
+
+        function rebuildAllSessionDecks() {
+            Object.keys(SUBJECTS).forEach(subjId => {
+                buildFreshShuffledDeck(subjId);
+            });
+        }
+
         function getNextRandomQuestion(subjectId) {
             const pool = getSubjectQuestions(subjectId);
             if (!pool || pool.length === 0) return null;
 
             state.seenQuestions[subjectId] = state.seenQuestions[subjectId] || [];
-            let seenIndices = state.seenQuestions[subjectId];
+            const seenTexts = new Set(state.seenQuestions[subjectId]);
 
-            // Si ya han salido todas las preguntas de esta área, reiniciamos solo esta área
-            if (seenIndices.length >= pool.length) {
-                seenIndices = [];
-                state.seenQuestions[subjectId] = [];
+            if (!Array.isArray(state.sessionDecks[subjectId]) || state.sessionDecks[subjectId].length === 0) {
+                buildFreshShuffledDeck(subjectId);
             }
 
-            const unseenIndices = [];
-            for (let i = 0; i < pool.length; i++) {
-                if (!seenIndices.includes(i)) {
-                    unseenIndices.push(i);
-                }
+            let deck = state.sessionDecks[subjectId].filter(idx => idx >= 0 && idx < pool.length && !seenTexts.has(pool[idx].q));
+
+            if (deck.length === 0) {
+                deck = buildFreshShuffledDeck(subjectId);
             }
 
-            // Barajado Fisher-Yates sobre los índices no vistos
-            for (let i = unseenIndices.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [unseenIndices[i], unseenIndices[j]] = [unseenIndices[j], unseenIndices[i]];
-            }
+            // Elegimos un índice aleatorio dentro de los primeros elementos del mazo ya barajado
+            const pickPos = secureRandomInt(Math.min(5, deck.length));
+            const chosenIndex = deck.splice(pickPos, 1)[0];
+            const chosenQuestion = pool[chosenIndex];
 
-            const chosenIndex = unseenIndices[0];
-            state.seenQuestions[subjectId].push(chosenIndex);
-            saveSeenQuestions();
+            state.sessionDecks[subjectId] = deck;
+            state.seenQuestions[subjectId].push(chosenQuestion.q);
+            saveQuestionState();
+            renderLegend();
 
-            return pool[chosenIndex];
+            return chosenQuestion;
         }
 
         function openQuestionForCell(cell) {
@@ -1014,11 +1194,16 @@
             const container = document.getElementById('subjects-legend');
             container.innerHTML = '';
             let totalLoaded = 0;
+            let totalRemaining = 0;
 
             state.activeSubjects.forEach(subjId => {
                 const subj = SUBJECTS[subjId];
-                const count = getSubjectQuestions(subjId).length;
+                const pool = getSubjectQuestions(subjId);
+                const count = pool.length;
+                const seenCount = (state.seenQuestions[subjId] || []).length;
+                const remaining = Math.max(0, count - seenCount);
                 totalLoaded += count;
+                totalRemaining += remaining;
 
                 container.innerHTML += `
                     <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100">
@@ -1028,12 +1213,12 @@
                             </span>
                             <span class="text-xs font-bold text-slate-700">${subj.name}</span>
                         </div>
-                        <span class="text-[11px] font-semibold text-slate-500">${count} preg.</span>
+                        <span class="text-[11px] font-semibold text-slate-500" title="Preguntas sin salir / Total">${remaining}/${count}</span>
                     </div>
                 `;
             });
 
-            document.getElementById('total-questions-badge').textContent = `${totalLoaded} preg.`;
+            document.getElementById('total-questions-badge').textContent = `${totalRemaining}/${totalLoaded} disp.`;
         }
 
         // Inicializar al cargar la página
