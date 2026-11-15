@@ -91,6 +91,11 @@
             </div>
             
             <div class="flex items-center gap-2">
+                <!-- Temporizador de 15 minutos -->
+                <div id="timer-badge" class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-game text-sm sm:text-base flex items-center gap-1.5 shadow-inner" title="Tiempo restante de la partida (máx. 15 min)">
+                    <i class="fa-solid fa-stopwatch text-amber-600"></i>
+                    <span id="game-timer-display">15:00</span>
+                </div>
                 <button id="btn-reset-history" onclick="resetSeenQuestions()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5" title="Reiniciar el historial de preguntas vistas">
                     <i class="fa-solid fa-rotate"></i> <span class="hidden md:inline">Reiniciar preguntas</span>
                 </button>
@@ -113,7 +118,9 @@
             <div class="bg-white rounded-3xl p-5 shadow-lg border border-indigo-50">
                 <div class="flex items-center justify-between mb-4">
                     <span class="text-xs font-bold uppercase tracking-wider text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full">Turno Actual</span>
-                    <span id="active-subjects-badge" class="text-xs font-medium text-slate-500">5 Áreas activas</span>
+                    <span id="streak-badge" class="text-xs font-bold text-amber-700 bg-amber-100 px-2.5 py-1 rounded-full flex items-center gap-1" title="Aciertos seguidos en este turno (máx. 5)">
+                        <i class="fa-solid fa-fire text-orange-500"></i> Racha: 0/5
+                    </span>
                 </div>
                 
                 <div id="current-player-banner" class="flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md mb-5 transition-all">
@@ -448,14 +455,17 @@
             activeSubjects: ['matematicas', 'lengua', 'conocimiento', 'ingles', 'frances'],
             currentPlayerIdx: 0,
             diceValue: 0,
-            phase: 'ROLL', // 'ROLL' | 'MOVE' | 'QUESTION'
+            phase: 'ROLL', // 'ROLL' | 'MOVE' | 'QUESTION' | 'ENDED'
             validMoves: [],
             boardCells: [],
             currentQuestion: null,
             currentCell: null,
             soundEnabled: true,
             seenQuestions: loadStorageJSON(STORAGE_KEY_SEEN, {}),
-            sessionDecks: {} // Mazos barajados frescos en cada nueva partida
+            sessionDecks: {}, // Mazos barajados frescos en cada nueva partida
+            turnStreak: 0, // Tiradas acertadas seguidas en el turno actual (máx. 5)
+            timeLeftSeconds: 15 * 60, // 15 minutos máximo por partida
+            timerInterval: null
         };
 
         function loadStorageJSON(key, fallback) {
@@ -482,58 +492,6 @@
             rebuildAllSessionDecks();
             renderLegend();
             showToast('Historial reiniciado: todas las preguntas vuelven a estar disponibles y barajadas.');
-        }
-            return FALLBACK_BANK[subjectId] || [];
-        }
-
-        /* ==========================================================================
-           3. ESTADO DEL JUEGO Y SISTEMA ALEATORIO SIN REPETICIÓN ENTRE PARTIDAS
-           ========================================================================== */
-        const PLAYER_COLORS = ['#2563eb', '#dc2626', '#059669', '#d97706'];
-        const BOARD_SIZE = 24;
-        const STORAGE_KEY_SEEN = 'trivial5_seen_questions_v2';
-        const STORAGE_KEY_DECKS = 'trivial5_shuffled_decks_v2';
-
-        let state = {
-            playerCount: 2,
-            players: [],
-            activeSubjects: ['matematicas', 'lengua', 'conocimiento', 'ingles', 'frances'],
-            currentPlayerIdx: 0,
-            diceValue: 0,
-            phase: 'ROLL', // 'ROLL' | 'MOVE' | 'QUESTION'
-            validMoves: [],
-            boardCells: [],
-            currentQuestion: null,
-            currentCell: null,
-            soundEnabled: true,
-            seenQuestions: loadStorageJSON(STORAGE_KEY_SEEN, {}),
-            shuffledDecks: loadStorageJSON(STORAGE_KEY_DECKS, {})
-        };
-
-        function loadStorageJSON(key, fallback) {
-            try {
-                const saved = localStorage.getItem(key);
-                return saved ? JSON.parse(saved) : fallback;
-            } catch (e) {
-                return fallback;
-            }
-        }
-
-        function saveQuestionState() {
-            try {
-                localStorage.setItem(STORAGE_KEY_SEEN, JSON.stringify(state.seenQuestions));
-                localStorage.setItem(STORAGE_KEY_DECKS, JSON.stringify(state.shuffledDecks));
-            } catch (e) {
-                // Ignorar si localStorage está restringido
-            }
-        }
-
-        function resetSeenQuestions() {
-            state.seenQuestions = {};
-            state.shuffledDecks = {};
-            saveQuestionState();
-            renderLegend();
-            showToast('Historial reiniciado: las 210 preguntas de cada área vuelven a estar disponibles.');
         }
 
         function showToast(msg) {
@@ -676,11 +634,101 @@
         }
 
         function openConfigModal() {
+            stopGameTimer();
             document.getElementById('victory-modal').classList.add('hidden');
             document.getElementById('victory-modal').classList.remove('flex');
             document.getElementById('config-modal').classList.remove('hidden');
             document.getElementById('config-modal').classList.add('flex');
             initConfigUI();
+        }
+
+        function startGameTimer() {
+            stopGameTimer();
+            state.timeLeftSeconds = 15 * 60;
+            updateTimerDisplay();
+            state.timerInterval = setInterval(() => {
+                if (state.phase === 'ENDED') {
+                    stopGameTimer();
+                    return;
+                }
+                state.timeLeftSeconds--;
+                updateTimerDisplay();
+                if (state.timeLeftSeconds <= 0) {
+                    stopGameTimer();
+                    endGameByTimeLimit();
+                }
+            }, 1000);
+        }
+
+        function stopGameTimer() {
+            if (state.timerInterval) {
+                clearInterval(state.timerInterval);
+                state.timerInterval = null;
+            }
+        }
+
+        function updateTimerDisplay() {
+            const mins = Math.floor(Math.max(0, state.timeLeftSeconds) / 60);
+            const secs = Math.max(0, state.timeLeftSeconds) % 60;
+            const display = document.getElementById('game-timer-display');
+            const badge = document.getElementById('timer-badge');
+            if (display) {
+                display.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+            if (badge) {
+                if (state.timeLeftSeconds <= 60) {
+                    badge.className = 'px-3 py-2 rounded-xl bg-rose-100 border border-rose-300 text-rose-800 font-game text-sm sm:text-base flex items-center gap-1.5 animate-pulse';
+                } else {
+                    badge.className = 'px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-game text-sm sm:text-base flex items-center gap-1.5 shadow-inner';
+                }
+            }
+        }
+
+        function endGameByTimeLimit() {
+            state.phase = 'ENDED';
+            const qModal = document.getElementById('question-modal');
+            if (qModal) {
+                qModal.classList.add('hidden');
+                qModal.classList.remove('flex');
+            }
+            const btnRoll = document.getElementById('btn-roll');
+            if (btnRoll) {
+                btnRoll.disabled = true;
+                btnRoll.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+
+            // Ordenar por puntos totales (desempate por número de quesitos)
+            const sorted = [...state.players].sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                return b.wedges.length - a.wedges.length;
+            });
+
+            const topScore = sorted[0].points;
+            const topWedges = sorted[0].wedges.length;
+            const winners = sorted.filter(p => p.points === topScore && p.wedges.length === topWedges);
+
+            const rankingHTML = sorted.map((p, idx) =>
+                `<div class="flex justify-between items-center text-sm py-1.5 px-3 rounded-xl ${idx === 0 ? 'bg-amber-50 font-bold text-amber-950' : 'text-slate-600'}">
+                    <span>${idx + 1}. ${p.name}</span>
+                    <span>${p.points} pts · ${p.wedges.length} ★</span>
+                </div>`
+            ).join('');
+
+            const titleText = winners.length > 1
+                ? `¡Se acabaron los 15 minutos! Empate en cabeza entre <strong>${winners.map(w => w.name).join(' y ')}</strong> con <strong>${topScore} puntos</strong>.`
+                : `¡Se acabaron los 15 minutos! Gana <strong>${winners[0].name}</strong> con <strong>${topScore} puntos</strong> y ${topWedges} quesito(s).`;
+
+            document.getElementById('winner-text').innerHTML = `
+                <p class="mb-4">${titleText}</p>
+                <div class="bg-slate-50 rounded-2xl p-3 border border-slate-200 space-y-1 text-left">
+                    ${rankingHTML}
+                </div>
+            `;
+
+            const vModal = document.getElementById('victory-modal');
+            vModal.classList.remove('hidden');
+            vModal.classList.add('flex');
+            playSound('wedge');
         }
 
         function startGame() {
@@ -704,11 +752,13 @@
                     name: name,
                     color: PLAYER_COLORS[i],
                     position: startPos,
-                    wedges: [] // IDs de áreas conseguidas
+                    wedges: [], // IDs de áreas conseguidas
+                    points: 0   // Puntos totales (quesitos + aciertos + bonus racha de 5)
                 });
             }
 
             state.currentPlayerIdx = 0;
+            state.turnStreak = 0;
             state.diceValue = 0;
             state.phase = 'ROLL';
             state.validMoves = [];
@@ -718,6 +768,7 @@
             renderScoreboard();
             renderLegend();
             updateTurnUI();
+            startGameTimer();
 
             document.getElementById('config-modal').classList.add('hidden');
             document.getElementById('config-modal').classList.remove('flex');
@@ -1088,22 +1139,40 @@
 
             feedback.classList.remove('hidden');
             state._lastAnswerCorrect = isCorrect;
+            state._streakCompletedPass = false;
 
             if (isCorrect) {
+                state.turnStreak++;
                 let gotNewWedge = false;
                 if (cell.isWedge && !player.wedges.includes(cell.subjectId)) {
                     player.wedges.push(cell.subjectId);
+                    player.points += 2; // Quesito vale 2 puntos
                     gotNewWedge = true;
                     playSound('wedge');
                 } else {
+                    player.points += 1; // Acierto normal vale 1 punto
                     playSound('correct');
                 }
 
+                // Comprobar si alcanzó el máximo de 5 tiradas acertadas seguidas
+                let gotStreakBonus = false;
+                if (state.turnStreak >= 5) {
+                    player.points += 1; // +1 punto extra por completar 5 aciertos seguidos
+                    gotStreakBonus = true;
+                    state._streakCompletedPass = true;
+                    playSound('wedge');
+                }
+
                 feedback.className = 'p-4 rounded-2xl mb-2 bg-emerald-100/80 border border-emerald-300 text-emerald-950';
-                fTitle.innerHTML = gotNewWedge
-                    ? `<i class="fa-solid fa-star text-amber-500"></i> ¡Respuesta correcta! ¡Has ganado el quesito de ${SUBJECTS[cell.subjectId].short}!`
-                    : `<i class="fa-solid fa-circle-check text-emerald-600"></i> ¡Muy bien! Vuelves a tirar el dado.`;
+                if (gotStreakBonus) {
+                    fTitle.innerHTML = `<i class="fa-solid fa-fire text-orange-500"></i> ¡5 de 5 seguidas! Ganas <strong>+1 punto extra</strong>${gotNewWedge ? ` y el quesito de ${SUBJECTS[cell.subjectId].short}` : ''}. Pasa el turno.`;
+                } else if (gotNewWedge) {
+                    fTitle.innerHTML = `<i class="fa-solid fa-star text-amber-500"></i> ¡Correcto! Quesito de ${SUBJECTS[cell.subjectId].short} (+2 pts). Racha: ${state.turnStreak}/5.`;
+                } else {
+                    fTitle.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> ¡Muy bien! (+1 pt · Racha ${state.turnStreak}/5). Vuelves a tirar.`;
+                }
             } else {
+                state.turnStreak = 0;
                 playSound('wrong');
                 feedback.className = 'p-4 rounded-2xl mb-2 bg-rose-100/80 border border-rose-300 text-rose-950';
                 fTitle.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i> ¡Casi! Pasa el turno al siguiente jugador.`;
@@ -1111,6 +1180,7 @@
 
             fExp.textContent = q.explanation || '';
             renderScoreboard();
+            updateStreakBadge();
         }
 
         function closeQuestionModal() {
@@ -1118,11 +1188,15 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
 
+            if (state.phase === 'ENDED') return;
+
             const player = state.players[state.currentPlayerIdx];
 
             // Comprobar si el jugador ha conseguido todos los quesitos activos
             if (player.wedges.length >= state.activeSubjects.length) {
-                document.getElementById('winner-text').innerHTML = `<strong>${player.name}</strong> ha conseguido todos los quesitos de 5º de Primaria. ¡Campeón/a!`;
+                stopGameTimer();
+                state.phase = 'ENDED';
+                document.getElementById('winner-text').innerHTML = `<strong>${player.name}</strong> ha conseguido todos los quesitos de 5º de Primaria con <strong>${player.points} puntos</strong>. ¡Campeón/a!`;
                 const vModal = document.getElementById('victory-modal');
                 vModal.classList.remove('hidden');
                 vModal.classList.add('flex');
@@ -1130,8 +1204,10 @@
                 return;
             }
 
-            // Si falló, pasa al siguiente jugador; si acertó, conserva el turno
-            if (!state._lastAnswerCorrect) {
+            // Pasa el turno si falló O si completó las 5 tiradas seguidas acertadas
+            if (!state._lastAnswerCorrect || state._streakCompletedPass) {
+                state.turnStreak = 0;
+                state._streakCompletedPass = false;
                 state.currentPlayerIdx = (state.currentPlayerIdx + 1) % state.players.length;
             }
 
@@ -1140,11 +1216,19 @@
             btnRoll.disabled = false;
             btnRoll.classList.remove('opacity-50', 'cursor-not-allowed');
             updateTurnUI();
+            renderScoreboard();
         }
 
         /* ==========================================================================
            9. ACTUALIZACIÓN DE INTERFAZ (MARCADOR, LEYENDA Y TURNO)
            ========================================================================== */
+        function updateStreakBadge() {
+            const badge = document.getElementById('streak-badge');
+            if (badge) {
+                badge.innerHTML = `<i class="fa-solid fa-fire text-orange-500"></i> Racha: ${state.turnStreak}/5`;
+            }
+        }
+
         function updateTurnUI() {
             const player = state.players[state.currentPlayerIdx];
             if (!player) return;
@@ -1154,7 +1238,7 @@
             document.getElementById('current-player-avatar').textContent = player.id + 1;
             document.getElementById('current-player-name').textContent = player.name;
             document.getElementById('game-status-text').textContent = '¡Tira el dado para avanzar!';
-            document.getElementById('active-subjects-badge').textContent = `${state.activeSubjects.length} Área${state.activeSubjects.length > 1 ? 's' : ''} activa${state.activeSubjects.length > 1 ? 's' : ''}`;
+            updateStreakBadge();
         }
 
         function renderScoreboard() {
@@ -1180,7 +1264,10 @@
                                 <span class="w-6 h-6 rounded-lg text-white text-xs font-bold flex items-center justify-center" style="background:${p.color}">${p.id + 1}</span>
                                 <span class="font-bold text-sm text-slate-800">${p.name}</span>
                             </div>
-                            <span class="text-xs font-bold text-slate-500">${p.wedges.length}/${state.activeSubjects.length} ★</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-extrabold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">${p.points} pts</span>
+                                <span class="text-xs font-bold text-slate-500">${p.wedges.length}/${state.activeSubjects.length} ★</span>
+                            </div>
                         </div>
                         <div class="flex items-center gap-1.5 flex-wrap">
                             ${wedgesHTML}
