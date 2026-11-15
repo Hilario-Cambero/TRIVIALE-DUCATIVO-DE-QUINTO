@@ -92,9 +92,9 @@
             
             <div class="flex items-center gap-2">
                 <!-- Temporizador de partida (se muestra si se elige modo con tiempo) -->
-                <div id="timer-badge" class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-game text-sm sm:text-base flex items-center gap-1.5 shadow-inner" title="Tiempo restante de la partida">
-                    <i class="fa-solid fa-stopwatch text-amber-600"></i>
-                    <span id="game-timer-display">15:00</span>
+                <div id="timer-badge" class="px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 font-game text-xs sm:text-sm flex items-center gap-1.5" title="Tiempo restante de la partida">
+                    <i class="fa-solid fa-infinity text-indigo-500"></i>
+                    <span id="game-timer-display">Sin límite</span>
                 </div>
                 <button id="btn-reset-history" onclick="resetSeenQuestions()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5" title="Reiniciar el historial de preguntas vistas">
                     <i class="fa-solid fa-rotate"></i> <span class="hidden md:inline">Reiniciar preguntas</span>
@@ -493,6 +493,23 @@
         const BOARD_SIZE = 24;
         const STORAGE_KEY_SEEN = 'trivial5_seen_questions_v3';
 
+        function loadStorageJSON(key, fallback) {
+            try {
+                const raw = localStorage.getItem(key);
+                return raw ? JSON.parse(raw) : fallback;
+            } catch (e) {
+                return fallback;
+            }
+        }
+
+        function saveQuestionState() {
+            try {
+                localStorage.setItem(STORAGE_KEY_SEEN, JSON.stringify(state.seenQuestions));
+            } catch (e) {
+                // Ignorar si localStorage no está disponible
+            }
+        }
+
         let state = {
             playerCount: 2,
             players: [],
@@ -513,9 +530,177 @@
             timeLeftSeconds: 15 * 60,
             timerInterval: null,
             questionTimeLeft: 15, // 15 segundos máximo por pregunta
-            questionTimerInterval: null
+            questionTimerInterval: null,
+            _lastAnswerCorrect: false,
+            _streakCompletedPass: false
         };
-// ... existing code ... -->
+
+        /* ==========================================================================
+           4. AUDIO CON TONE.JS Y NOTIFICACIONES VISUALES
+           ========================================================================== */
+        function playSound(type) {
+            if (!state.soundEnabled || typeof Tone === 'undefined') return;
+            try {
+                if (Tone.context && Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+                const synth = new Tone.Synth().toDestination();
+                synth.volume.value = -10;
+                if (type === 'dice') {
+                    synth.triggerAttackRelease('C4', '16n');
+                    setTimeout(() => synth.triggerAttackRelease('E4', '16n'), 70);
+                    setTimeout(() => synth.triggerAttackRelease('G4', '16n'), 140);
+                } else if (type === 'move') {
+                    synth.triggerAttackRelease('A4', '32n');
+                } else if (type === 'correct') {
+                    synth.triggerAttackRelease('C5', '16n');
+                    setTimeout(() => synth.triggerAttackRelease('E5', '16n'), 90);
+                    setTimeout(() => synth.triggerAttackRelease('G5', '8n'), 180);
+                } else if (type === 'wrong') {
+                    synth.triggerAttackRelease('E3', '8n');
+                    setTimeout(() => synth.triggerAttackRelease('C3', '4n'), 140);
+                } else if (type === 'wedge') {
+                    synth.triggerAttackRelease('C5', '16n');
+                    setTimeout(() => synth.triggerAttackRelease('E5', '16n'), 80);
+                    setTimeout(() => synth.triggerAttackRelease('G5', '16n'), 160);
+                    setTimeout(() => synth.triggerAttackRelease('C6', '4n'), 240);
+                }
+            } catch (e) {
+                // Ignorar errores de audio del navegador
+            }
+        }
+
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            const icon = document.getElementById('icon-sound');
+            if (icon) {
+                icon.className = state.soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-slate-400';
+            }
+            showToast(state.soundEnabled ? 'Sonido activado' : 'Sonido silenciado');
+        }
+
+        function showToast(msg) {
+            const banner = document.getElementById('toast-banner');
+            const text = document.getElementById('toast-message');
+            if (!banner || !text) return;
+            text.textContent = msg;
+            banner.classList.remove('hidden');
+            clearTimeout(window._toastTimeout);
+            window._toastTimeout = setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 3000);
+        }
+
+        function resetSeenQuestions() {
+            state.seenQuestions = {};
+            saveQuestionState();
+            rebuildAllSessionDecks();
+            renderLegend();
+            updateBankStatusBanner();
+            showToast('Historial de preguntas reiniciado: ¡todas disponibles de nuevo!');
+        }
+
+        /* ==========================================================================
+           5. PANTALLA DE CONFIGURACIÓN INICIAL (JUGADORES, ÁREAS Y TIEMPO)
+           ========================================================================== */
+        function setPlayerCount(count) {
+            state.playerCount = count;
+            document.querySelectorAll('.player-count-btn').forEach(btn => {
+                const c = parseInt(btn.getAttribute('data-count'), 10);
+                if (c === count) {
+                    btn.className = 'player-count-btn py-2.5 rounded-xl font-bold border-2 border-indigo-600 bg-indigo-600 text-white transition shadow-sm';
+                } else {
+                    btn.className = 'player-count-btn py-2.5 rounded-xl font-bold border-2 border-slate-200 bg-white text-slate-600 hover:border-indigo-300 transition';
+                }
+            });
+
+            const container = document.getElementById('player-names-inputs');
+            if (!container) return;
+            const existingValues = [];
+            for (let i = 0; i < 4; i++) {
+                const el = document.getElementById(`player-name-${i}`);
+                existingValues[i] = el ? el.value : `Equipo / Jugador ${i + 1}`;
+            }
+
+            container.innerHTML = '';
+            const badgeColors = ['bg-blue-600', 'bg-red-600', 'bg-emerald-600', 'bg-amber-500'];
+            for (let i = 0; i < count; i++) {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200';
+                div.innerHTML = `
+                    <span class="w-7 h-7 rounded-lg ${badgeColors[i]} text-white font-bold text-xs flex items-center justify-center shrink-0">${i + 1}</span>
+                    <input id="player-name-${i}" type="text" maxlength="20" value="${existingValues[i]}" placeholder="Nombre Jugador ${i + 1}" class="w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none">
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        function renderSubjectCheckboxes() {
+            const container = document.getElementById('subjects-checkboxes');
+            if (!container) return;
+            container.innerHTML = '';
+
+            Object.values(SUBJECTS).forEach(subj => {
+                const checked = state.activeSubjects.includes(subj.id);
+                const totalQ = getSubjectQuestions(subj.id).length;
+                const label = document.createElement('label');
+                label.className = `flex items-center justify-between p-3 rounded-2xl border-2 cursor-pointer transition ${checked ? 'border-indigo-500 bg-indigo-50/40' : 'border-slate-200 bg-white hover:border-slate-300'}`;
+                label.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <input type="checkbox" value="${subj.id}" ${checked ? 'checked' : ''} onchange="onSubjectCheckboxChange('${subj.id}', this.checked)" class="w-4 h-4 accent-indigo-600 rounded">
+                        <span class="w-8 h-8 rounded-xl text-white flex items-center justify-center text-sm shadow-sm" style="background-color: ${subj.color}">
+                            <i class="fa-solid ${subj.icon}"></i>
+                        </span>
+                        <div>
+                            <div class="text-xs sm:text-sm font-bold text-slate-800 leading-tight">${subj.name}</div>
+                            <div class="text-[11px] text-slate-500 font-medium">${totalQ} preguntas disponibles</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(label);
+            });
+        }
+
+        function onSubjectCheckboxChange(subjectId, isChecked) {
+            if (isChecked) {
+                if (!state.activeSubjects.includes(subjectId)) {
+                    state.activeSubjects.push(subjectId);
+                }
+            } else {
+                state.activeSubjects = state.activeSubjects.filter(id => id !== subjectId);
+            }
+            document.getElementById('subject-error').classList.toggle('hidden', state.activeSubjects.length > 0);
+            renderSubjectCheckboxes();
+        }
+
+        function toggleAllSubjects() {
+            const allIds = Object.keys(SUBJECTS);
+            if (state.activeSubjects.length === allIds.length) {
+                state.activeSubjects = [];
+            } else {
+                state.activeSubjects = [...allIds];
+            }
+            document.getElementById('subject-error').classList.toggle('hidden', state.activeSubjects.length > 0);
+            renderSubjectCheckboxes();
+        }
+
+        function updateBankStatusBanner() {
+            const textEl = document.getElementById('bank-status-text');
+            if (!textEl) return;
+            let total = 0;
+            let externalCount = 0;
+            Object.keys(SUBJECTS).forEach(id => {
+                total += getSubjectQuestions(id).length;
+                if (isExternalBankLoaded(id)) externalCount++;
+            });
+
+            if (externalCount === 5) {
+                textEl.innerHTML = `<strong class="text-emerald-700">¡Repositorio completo conectado!</strong> ${total} preguntas cargadas de las 5 áreas de 5º de Primaria en modo aleatorio sin repetición.`;
+            } else {
+                textEl.innerHTML = `<strong class="text-slate-800">Banco de preguntas listo (${total} preguntas):</strong> Sube los archivos <code>.js</code> de cada asignatura junto a <code>index.html</code> en GitHub para activar las +1.000 preguntas completas.`;
+            }
+        }
+
         function initConfigUI() {
             setPlayerCount(state.playerCount);
             renderSubjectCheckboxes();
@@ -570,7 +755,7 @@
                 }
             });
         }
-// ... existing code ... -->
+
         function openConfigModal() {
             stopGameTimer();
             stopQuestionTimer();
@@ -639,7 +824,28 @@
         function endGameByTimeLimit() {
             stopQuestionTimer();
             state.phase = 'ENDED';
-// ... existing code ... -->
+            const qModal = document.getElementById('question-modal');
+            if (qModal) {
+                qModal.classList.add('hidden');
+                qModal.classList.remove('flex');
+            }
+
+            const sorted = [...state.players].sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                return b.wedges.length - a.wedges.length;
+            });
+
+            const topScore = sorted[0].points;
+            const topWedges = sorted[0].wedges.length;
+            const winners = sorted.filter(p => p.points === topScore && p.wedges.length === topWedges);
+
+            const rankingHTML = sorted.map((p, idx) => `
+                <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl ${idx === 0 ? 'bg-amber-100/80 font-bold text-amber-950' : 'text-slate-700'}">
+                    <span>${idx + 1}º ${p.name}</span>
+                    <span>${p.points} pts · ${p.wedges.length}/${state.activeSubjects.length} ★</span>
+                </div>
+            `).join('');
+
             const titleText = winners.length > 1
                 ? `¡Se acabó el tiempo (${state.selectedMinutes} min)! Empate en cabeza entre <strong>${winners.map(w => w.name).join(' y ')}</strong> con <strong>${topScore} puntos</strong>.`
                 : `¡Se acabó el tiempo (${state.selectedMinutes} min)! Gana <strong>${winners[0].name}</strong> con <strong>${topScore} puntos</strong> y ${topWedges} quesito(s).`;
@@ -1125,4 +1331,232 @@
         function checkAnswer(selectedIdx) {
             stopQuestionTimer();
             const q = state.currentQuestion;
-// ... existing code ... -->
+            const cell = state.currentCell;
+            const player = state.players[state.currentPlayerIdx];
+            if (!q || !cell || !player) return;
+
+            const isCorrect = selectedIdx === q.answer;
+            const buttons = document.querySelectorAll('.q-opt-btn');
+
+            buttons.forEach((btn, idx) => {
+                btn.disabled = true;
+                if (idx === q.answer) {
+                    btn.className = 'q-opt-btn w-full text-left p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 font-bold text-emerald-900 flex items-center gap-3';
+                } else if (idx === selectedIdx && !isCorrect) {
+                    btn.className = 'q-opt-btn w-full text-left p-3.5 rounded-2xl border-2 border-rose-500 bg-rose-50 font-bold text-rose-900 flex items-center gap-3';
+                } else {
+                    btn.className = 'q-opt-btn w-full text-left p-3.5 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-400 flex items-center gap-3 opacity-60';
+                }
+            });
+
+            const feedback = document.getElementById('q-feedback');
+            const fTitle = document.getElementById('q-feedback-title');
+            const fExp = document.getElementById('q-feedback-explanation');
+            feedback.classList.remove('hidden');
+
+            if (isCorrect) {
+                state.turnStreak++;
+                let earnedWedge = false;
+                if (cell.isWedge && !player.wedges.includes(cell.subjectId)) {
+                    player.wedges.push(cell.subjectId);
+                    player.points += 2; // 2 puntos por conseguir quesito
+                    earnedWedge = true;
+                } else {
+                    player.points += 1; // 1 punto por acierto normal
+                }
+
+                let bonusMsg = '';
+                if (state.turnStreak >= 5) {
+                    player.points += 1; // +1 punto extra por racha de 5 aciertos seguidos
+                    state._streakCompletedPass = true;
+                    bonusMsg = ' ¡Racha máxima de 5 aciertos (+1 punto extra) y pasa el turno!';
+                } else {
+                    state._streakCompletedPass = false;
+                }
+
+                state._lastAnswerCorrect = true;
+                playSound(earnedWedge ? 'wedge' : 'correct');
+
+                feedback.className = 'p-4 rounded-2xl mb-2 bg-emerald-50 border border-emerald-300 text-emerald-950';
+                fTitle.innerHTML = earnedWedge
+                    ? `<i class="fa-solid fa-star text-amber-500"></i> ¡CORRECTO! ¡Has ganado el quesito de ${SUBJECTS[cell.subjectId].name}!${bonusMsg}`
+                    : `<i class="fa-solid fa-circle-check text-emerald-600"></i> ¡Respuesta correcta! (+1 punto)${bonusMsg}`;
+            } else {
+                state.turnStreak = 0;
+                state._lastAnswerCorrect = false;
+                state._streakCompletedPass = false;
+                playSound('wrong');
+
+                feedback.className = 'p-4 rounded-2xl mb-2 bg-rose-50 border border-rose-300 text-rose-950';
+                fTitle.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i> ¡Respuesta incorrecta! Pasa el turno al siguiente jugador.`;
+            }
+
+            fExp.textContent = q.explanation || '';
+            renderScoreboard();
+            updateStreakBadge();
+        }
+
+        function closeQuestionModal() {
+            stopQuestionTimer();
+            const modal = document.getElementById('question-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            const player = state.players[state.currentPlayerIdx];
+            // Comprobar si el jugador ya consiguió todos los quesitos activos
+            if (player && player.wedges.length >= state.activeSubjects.length) {
+                endGameByAllWedges(player);
+                return;
+            }
+
+            // Si acertó y no ha llegado a 5 seguidas, repite turno; si falló o llegó a 5, pasa al siguiente
+            if (state._lastAnswerCorrect && !state._streakCompletedPass) {
+                state.phase = 'ROLL';
+                document.getElementById('game-status-text').textContent = `¡Acierto (${state.turnStreak}/5)! Vuelve a tirar el dado.`;
+            } else {
+                state.turnStreak = 0;
+                state.currentPlayerIdx = (state.currentPlayerIdx + 1) % state.players.length;
+                state.phase = 'ROLL';
+                updateTurnUI();
+            }
+
+            updateStreakBadge();
+            renderScoreboard();
+            const btnRoll = document.getElementById('btn-roll');
+            btnRoll.disabled = false;
+            btnRoll.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function endGameByAllWedges(winner) {
+            stopGameTimer();
+            stopQuestionTimer();
+            state.phase = 'ENDED';
+
+            const sorted = [...state.players].sort((a, b) => {
+                if (b.wedges.length !== a.wedges.length) return b.wedges.length - a.wedges.length;
+                return b.points - a.points;
+            });
+
+            const rankingHTML = sorted.map((p, idx) => `
+                <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-xl ${idx === 0 ? 'bg-amber-100/80 font-bold text-amber-950' : 'text-slate-700'}">
+                    <span>${idx + 1}º ${p.name}</span>
+                    <span>${p.wedges.length}/${state.activeSubjects.length} ★ · ${p.points} pts</span>
+                </div>
+            `).join('');
+
+            document.getElementById('winner-text').innerHTML = `
+                <p class="mb-4">¡<strong>${winner.name}</strong> ha conseguido todos los quesitos y gana la partida con <strong>${winner.points} puntos</strong>!</p>
+                <div class="bg-slate-50 rounded-2xl p-3 border border-slate-200 space-y-1 text-left">
+                    ${rankingHTML}
+                </div>
+            `;
+
+            const vModal = document.getElementById('victory-modal');
+            vModal.classList.remove('hidden');
+            vModal.classList.add('flex');
+            playSound('wedge');
+        }
+
+        /* ==========================================================================
+           9. ACTUALIZACIÓN DE INTERFAZ (MARCADOR, LEYENDA Y TURNO)
+           ========================================================================== */
+        function updateStreakBadge() {
+            const badge = document.getElementById('streak-badge');
+            if (badge) {
+                badge.innerHTML = `<i class="fa-solid fa-fire text-orange-500"></i> Racha: ${state.turnStreak}/5`;
+            }
+        }
+
+        function updateTurnUI() {
+            const player = state.players[state.currentPlayerIdx];
+            if (!player) return;
+
+            const banner = document.getElementById('current-player-banner');
+            const avatar = document.getElementById('current-player-avatar');
+            const nameEl = document.getElementById('current-player-name');
+            const statusEl = document.getElementById('game-status-text');
+
+            if (banner) banner.style.background = `linear-gradient(135deg, ${player.color}, #1e1b4b)`;
+            if (avatar) avatar.textContent = player.id + 1;
+            if (nameEl) nameEl.textContent = player.name;
+            if (statusEl) statusEl.textContent = '¡Tira el dado para avanzar!';
+            updateStreakBadge();
+        }
+
+        function renderScoreboard() {
+            const container = document.getElementById('players-scoreboard');
+            if (!container) return;
+            container.innerHTML = '';
+
+            state.players.forEach((player, idx) => {
+                const isTurn = idx === state.currentPlayerIdx;
+                const wedgesHTML = state.activeSubjects.map(subjId => {
+                    const subj = SUBJECTS[subjId];
+                    const hasIt = player.wedges.includes(subjId);
+                    return `
+                        <span title="${subj.name}" class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] border transition ${hasIt ? 'text-white shadow-sm scale-105' : 'bg-slate-100 text-slate-300 border-slate-200'}" style="${hasIt ? `background-color: ${subj.color}; border-color: ${subj.color}` : ''}">
+                            <i class="fa-solid fa-star"></i>
+                        </span>
+                    `;
+                }).join('');
+
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-2xl border-2 transition ${isTurn ? 'border-indigo-500 bg-indigo-50/40 shadow-sm' : 'border-slate-100 bg-slate-50/60'}`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-lg text-white font-bold text-xs flex items-center justify-center" style="background-color: ${player.color}">${player.id + 1}</span>
+                            <span class="font-bold text-sm text-slate-800">${player.name}</span>
+                        </div>
+                        <span class="text-xs font-extrabold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">${player.points} pts</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">${wedgesHTML}</div>
+                        <span class="text-[11px] font-semibold text-slate-500">${player.wedges.length}/${state.activeSubjects.length} ★</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderLegend() {
+            const container = document.getElementById('subjects-legend');
+            const totalBadge = document.getElementById('total-questions-badge');
+            if (!container) return;
+            container.innerHTML = '';
+
+            let totalAvailable = 0;
+
+            state.activeSubjects.forEach(subjId => {
+                const subj = SUBJECTS[subjId];
+                const pool = getSubjectQuestions(subjId);
+                const seenCount = (state.seenQuestions[subjId] || []).length;
+                const remaining = Math.max(0, pool.length - seenCount);
+                totalAvailable += pool.length;
+
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-lg text-white text-xs flex items-center justify-center shrink-0" style="background-color: ${subj.color}">
+                            <i class="fa-solid ${subj.icon}"></i>
+                        </span>
+                        <span class="text-xs font-bold text-slate-700">${subj.name}</span>
+                    </div>
+                    <span class="text-[11px] font-semibold text-slate-500" title="Preguntas sin responder / Total">${remaining}/${pool.length}</span>
+                `;
+                container.appendChild(item);
+            });
+
+            if (totalBadge) {
+                totalBadge.textContent = `${totalAvailable} preg.`;
+            }
+        }
+
+        // Inicializar interfaz al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            initConfigUI();
+        });
+    </script>
+</body>
+</html>
