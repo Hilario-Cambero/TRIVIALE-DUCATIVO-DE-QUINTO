@@ -91,8 +91,8 @@
             </div>
             
             <div class="flex items-center gap-2">
-                <!-- Temporizador de 15 minutos -->
-                <div id="timer-badge" class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-game text-sm sm:text-base flex items-center gap-1.5 shadow-inner" title="Tiempo restante de la partida (máx. 15 min)">
+                <!-- Temporizador de partida (se muestra si se elige modo con tiempo) -->
+                <div id="timer-badge" class="px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 font-game text-sm sm:text-base flex items-center gap-1.5 shadow-inner" title="Tiempo restante de la partida">
                     <i class="fa-solid fa-stopwatch text-amber-600"></i>
                     <span id="game-timer-display">15:00</span>
                 </div>
@@ -239,6 +239,39 @@
                 </p>
             </div>
 
+            <!-- Paso 3: Modalidad de Tiempo de Partida -->
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-slate-700 mb-2">3. Duración de la partida (cada pregunta tiene máx. 15 segundos):</label>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <button type="button" id="btn-mode-untimed" onclick="setTimedMode(false)" class="py-2.5 px-3 rounded-xl font-bold border-2 border-indigo-600 bg-indigo-600 text-white text-sm flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-infinity"></i> Sin límite de tiempo
+                    </button>
+                    <button type="button" id="btn-mode-timed" onclick="setTimedMode(true)" class="py-2.5 px-3 rounded-xl font-bold border-2 border-slate-200 bg-white text-slate-600 hover:border-indigo-300 text-sm flex items-center justify-center gap-2 transition">
+                        <i class="fa-solid fa-stopwatch"></i> Con tiempo límite
+                    </button>
+                </div>
+
+                <!-- Selector de minutos cuando se elige partida con tiempo -->
+                <div id="timed-duration-panel" class="hidden p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2.5">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-bold text-amber-950">Elige los minutos de la cuenta atrás:</span>
+                        <div class="flex items-center gap-1.5">
+                            <input type="number" id="custom-minutes-input" min="1" max="90" value="15" oninput="syncMinutesInput(this.value)" class="w-16 px-2 py-1 rounded-lg border border-amber-300 bg-white text-center font-bold text-sm text-slate-800 focus:outline-none">
+                            <span class="text-xs font-bold text-amber-900">min</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" onclick="setPresetMinutes(5)" class="preset-min-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-white border border-amber-200 text-amber-900 hover:bg-amber-100">5 min</button>
+                        <button type="button" onclick="setPresetMinutes(10)" class="preset-min-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-white border border-amber-200 text-amber-900 hover:bg-amber-100">10 min</button>
+                        <button type="button" onclick="setPresetMinutes(15)" class="preset-min-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 border border-amber-600 text-white">15 min</button>
+                        <button type="button" onclick="setPresetMinutes(20)" class="preset-min-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-white border border-amber-200 text-amber-900 hover:bg-amber-100">20 min</button>
+                        <button type="button" onclick="setPresetMinutes(30)" class="preset-min-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-white border border-amber-200 text-amber-900 hover:bg-amber-100">30 min</button>
+                    </div>
+                    <p class="text-[11px] text-amber-800">Gana quien consiga todos los quesitos primero o quien tenga más puntos al llegar a 00:00.</p>
+                </div>
+                <p id="untimed-hint" class="text-[11px] text-slate-500">En modo sin tiempo, gana el primer jugador o equipo que consiga todos los quesitos.</p>
+            </div>
+
             <!-- Estado de carga de bancos de preguntas -->
             <div id="bank-status-box" class="bg-slate-50 rounded-2xl p-3.5 mb-6 border border-slate-200 flex items-start gap-3 text-xs text-slate-600">
                 <i class="fa-brands fa-github text-xl text-slate-800 mt-0.5"></i>
@@ -266,9 +299,20 @@
                         <h3 id="q-subject-name" class="text-xl font-bold leading-tight">Asignatura</h3>
                     </div>
                 </div>
-                <span id="q-wedge-badge" class="hidden px-3 py-1 rounded-full bg-amber-400 text-amber-950 text-xs font-extrabold uppercase tracking-wide shadow">
-                    ★ ¡Por el Quesito!
-                </span>
+                <div class="flex items-center gap-2">
+                    <span id="q-wedge-badge" class="hidden px-3 py-1 rounded-full bg-amber-400 text-amber-950 text-xs font-extrabold uppercase tracking-wide shadow">
+                        ★ ¡Por el Quesito!
+                    </span>
+                    <!-- Reloj de 15 segundos por pregunta -->
+                    <span id="q-timer-pill" class="px-3 py-1 rounded-full bg-black/25 text-white font-game text-sm flex items-center gap-1.5 border border-white/25">
+                        <i class="fa-solid fa-clock"></i> <span id="q-timer-seconds">15s</span>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Barra de progreso de 15 segundos -->
+            <div class="w-full h-2 bg-slate-200 overflow-hidden">
+                <div id="q-timer-bar" class="h-full bg-amber-400 transition-all duration-1000 ease-linear" style="width: 100%"></div>
             </div>
 
             <div class="p-6">
@@ -464,177 +508,72 @@
             seenQuestions: loadStorageJSON(STORAGE_KEY_SEEN, {}),
             sessionDecks: {}, // Mazos barajados frescos en cada nueva partida
             turnStreak: 0, // Tiradas acertadas seguidas en el turno actual (máx. 5)
-            timeLeftSeconds: 15 * 60, // 15 minutos máximo por partida
-            timerInterval: null
+            isTimedGame: false, // false = sin límite de tiempo; true = con cuenta atrás
+            selectedMinutes: 15,
+            timeLeftSeconds: 15 * 60,
+            timerInterval: null,
+            questionTimeLeft: 15, // 15 segundos máximo por pregunta
+            questionTimerInterval: null
         };
-
-        function loadStorageJSON(key, fallback) {
-            try {
-                const saved = localStorage.getItem(key);
-                return saved ? JSON.parse(saved) : fallback;
-            } catch (e) {
-                return fallback;
-            }
-        }
-
-        function saveQuestionState() {
-            try {
-                localStorage.setItem(STORAGE_KEY_SEEN, JSON.stringify(state.seenQuestions));
-            } catch (e) {
-                // Ignorar si localStorage está restringido
-            }
-        }
-
-        function resetSeenQuestions() {
-            state.seenQuestions = {};
-            state.sessionDecks = {};
-            saveQuestionState();
-            rebuildAllSessionDecks();
-            renderLegend();
-            showToast('Historial reiniciado: todas las preguntas vuelven a estar disponibles y barajadas.');
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById('toast-banner');
-            document.getElementById('toast-message').textContent = msg;
-            toast.classList.remove('hidden');
-            clearTimeout(window._toastTimer);
-            window._toastTimer = setTimeout(() => {
-                toast.classList.add('hidden');
-            }, 3500);
-        }
-
-        /* ==========================================================================
-           4. EFECTOS DE SONIDO CON TONE.JS
-           ========================================================================== */
-        function playSound(type) {
-            if (!state.soundEnabled || typeof Tone === 'undefined') return;
-            try {
-                if (Tone.context.state !== 'running') {
-                    Tone.start();
-                }
-                const synth = new Tone.Synth().toDestination();
-                const now = Tone.now();
-                if (type === 'dice') {
-                    synth.triggerAttackRelease('C5', '16n', now);
-                } else if (type === 'move') {
-                    synth.triggerAttackRelease('E5', '16n', now);
-                } else if (type === 'correct') {
-                    synth.triggerAttackRelease('C5', '16n', now);
-                    synth.triggerAttackRelease('E5', '16n', now + 0.1);
-                    synth.triggerAttackRelease('G5', '8n', now + 0.2);
-                } else if (type === 'wrong') {
-                    synth.triggerAttackRelease('E4', '16n', now);
-                    synth.triggerAttackRelease('C4', '8n', now + 0.15);
-                } else if (type === 'wedge') {
-                    synth.triggerAttackRelease('C5', '16n', now);
-                    synth.triggerAttackRelease('E5', '16n', now + 0.08);
-                    synth.triggerAttackRelease('G5', '16n', now + 0.16);
-                    synth.triggerAttackRelease('C6', '4n', now + 0.24);
-                }
-            } catch (e) {
-                // Evitar fallos si el navegador bloquea el audio
-            }
-        }
-
-        function toggleSound() {
-            state.soundEnabled = !state.soundEnabled;
-            const icon = document.getElementById('icon-sound');
-            icon.className = state.soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-slate-400';
-        }
-
-        /* ==========================================================================
-           5. CONFIGURACIÓN INICIAL DE LA PARTIDA
-           ========================================================================== */
+// ... existing code ... -->
         function initConfigUI() {
             setPlayerCount(state.playerCount);
             renderSubjectCheckboxes();
+            setTimedMode(state.isTimedGame);
+            setPresetMinutes(state.selectedMinutes);
             updateBankStatusBanner();
         }
 
-        function updateBankStatusBanner() {
-            let total = 0;
-            let externalCount = 0;
-            Object.keys(SUBJECTS).forEach(id => {
-                total += getSubjectQuestions(id).length;
-                if (isExternalBankLoaded(id)) externalCount++;
-            });
-            const statusText = document.getElementById('bank-status-text');
-            if (statusText) {
-                if (externalCount === 5) {
-                    statusText.innerHTML = `<strong class="text-emerald-800">¡Los 5 archivos externos están cargados (${total} preguntas)!</strong> Modo aleatorio sin repeticiones entre partidas activado.`;
-                } else {
-                    statusText.innerHTML = `<strong class="text-slate-800">Banco activo (${total} preguntas cargadas):</strong> En GitHub asegúrate de subir <code>frances.js</code>, <code>conocimiento.js</code>, <code>matematicas.js</code>, <code>lengua.js</code> e <code>ingles.js</code> junto a este <code>index.html</code> para disponer de las +1.000 preguntas.`;
-                }
-            }
-        }
+        function setTimedMode(isTimed) {
+            state.isTimedGame = isTimed;
+            const btnUntimed = document.getElementById('btn-mode-untimed');
+            const btnTimed = document.getElementById('btn-mode-timed');
+            const durationPanel = document.getElementById('timed-duration-panel');
+            const untimedHint = document.getElementById('untimed-hint');
 
-        function setPlayerCount(count) {
-            state.playerCount = count;
-            document.querySelectorAll('.player-count-btn').forEach(btn => {
-                const c = parseInt(btn.dataset.count, 10);
-                if (c === count) {
-                    btn.className = 'player-count-btn py-2.5 rounded-xl font-bold border-2 border-indigo-600 bg-indigo-600 text-white shadow-sm transition';
-                } else {
-                    btn.className = 'player-count-btn py-2.5 rounded-xl font-bold border-2 border-slate-200 bg-white text-slate-600 hover:border-indigo-300 transition';
-                }
-            });
-
-            const container = document.getElementById('player-names-inputs');
-            container.innerHTML = '';
-            const defaultNames = ['Equipo Azul', 'Equipo Rojo', 'Equipo Verde', 'Equipo Naranja'];
-            for (let i = 0; i < count; i++) {
-                const existingName = state.players[i] ? state.players[i].name : defaultNames[i];
-                container.innerHTML += `
-                    <div class="flex items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                        <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shrink-0" style="background:${PLAYER_COLORS[i]}">${i + 1}</span>
-                        <input type="text" id="player-name-${i}" value="${existingName}" maxlength="18" placeholder="Nombre jugador ${i + 1}" class="w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none">
-                    </div>
-                `;
-            }
-        }
-
-        function renderSubjectCheckboxes() {
-            const container = document.getElementById('subjects-checkboxes');
-            container.innerHTML = '';
-            Object.values(SUBJECTS).forEach(subj => {
-                const checked = state.activeSubjects.includes(subj.id);
-                const qCount = getSubjectQuestions(subj.id).length;
-                container.innerHTML += `
-                    <label class="flex items-center justify-between p-3 rounded-2xl border-2 cursor-pointer transition ${checked ? 'border-indigo-500 bg-indigo-50/40' : 'border-slate-200 bg-white hover:bg-slate-50'}">
-                        <div class="flex items-center gap-2.5">
-                            <input type="checkbox" class="subject-cb w-4 h-4 accent-indigo-600 rounded" value="${subj.id}" ${checked ? 'checked' : ''} onchange="onSubjectCheckboxChange()">
-                            <span class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs" style="background:${subj.color}">
-                                <i class="fa-solid ${subj.icon}"></i>
-                            </span>
-                            <span class="text-sm font-bold text-slate-800">${subj.name}</span>
-                        </div>
-                        <span class="text-[11px] font-bold text-slate-500 bg-white px-2 py-0.5 rounded-full border border-slate-200">${qCount}</span>
-                    </label>
-                `;
-            });
-        }
-
-        function onSubjectCheckboxChange() {
-            const selected = Array.from(document.querySelectorAll('.subject-cb:checked')).map(cb => cb.value);
-            state.activeSubjects = selected;
-            document.getElementById('subject-error').classList.toggle('hidden', selected.length > 0);
-            renderSubjectCheckboxes();
-        }
-
-        function toggleAllSubjects() {
-            const allIds = Object.keys(SUBJECTS);
-            if (state.activeSubjects.length === allIds.length) {
-                state.activeSubjects = [];
+            if (isTimed) {
+                btnTimed.className = 'py-2.5 px-3 rounded-xl font-bold border-2 border-indigo-600 bg-indigo-600 text-white text-sm flex items-center justify-center gap-2 transition';
+                btnUntimed.className = 'py-2.5 px-3 rounded-xl font-bold border-2 border-slate-200 bg-white text-slate-600 hover:border-indigo-300 text-sm flex items-center justify-center gap-2 transition';
+                durationPanel.classList.remove('hidden');
+                untimedHint.classList.add('hidden');
             } else {
-                state.activeSubjects = [...allIds];
+                btnUntimed.className = 'py-2.5 px-3 rounded-xl font-bold border-2 border-indigo-600 bg-indigo-600 text-white text-sm flex items-center justify-center gap-2 transition';
+                btnTimed.className = 'py-2.5 px-3 rounded-xl font-bold border-2 border-slate-200 bg-white text-slate-600 hover:border-indigo-300 text-sm flex items-center justify-center gap-2 transition';
+                durationPanel.classList.add('hidden');
+                untimedHint.classList.remove('hidden');
             }
-            document.getElementById('subject-error').classList.toggle('hidden', state.activeSubjects.length > 0);
-            renderSubjectCheckboxes();
         }
 
+        function setPresetMinutes(mins) {
+            state.selectedMinutes = mins;
+            const input = document.getElementById('custom-minutes-input');
+            if (input) input.value = mins;
+            document.querySelectorAll('.preset-min-btn').forEach(btn => {
+                const val = parseInt(btn.textContent, 10);
+                if (val === mins) {
+                    btn.className = 'preset-min-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 border border-amber-600 text-white';
+                } else {
+                    btn.className = 'preset-min-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-white border border-amber-200 text-amber-900 hover:bg-amber-100';
+                }
+            });
+        }
+
+        function syncMinutesInput(val) {
+            const parsed = Math.max(1, Math.min(90, parseInt(val, 10) || 15));
+            state.selectedMinutes = parsed;
+            document.querySelectorAll('.preset-min-btn').forEach(btn => {
+                const bVal = parseInt(btn.textContent, 10);
+                if (bVal === parsed) {
+                    btn.className = 'preset-min-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-500 border border-amber-600 text-white';
+                } else {
+                    btn.className = 'preset-min-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-white border border-amber-200 text-amber-900 hover:bg-amber-100';
+                }
+            });
+        }
+// ... existing code ... -->
         function openConfigModal() {
             stopGameTimer();
+            stopQuestionTimer();
             document.getElementById('victory-modal').classList.add('hidden');
             document.getElementById('victory-modal').classList.remove('flex');
             document.getElementById('config-modal').classList.remove('hidden');
@@ -644,7 +583,19 @@
 
         function startGameTimer() {
             stopGameTimer();
-            state.timeLeftSeconds = 15 * 60;
+            const badge = document.getElementById('timer-badge');
+            if (!state.isTimedGame) {
+                if (badge) {
+                    badge.className = 'px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 font-game text-xs sm:text-sm flex items-center gap-1.5';
+                    badge.innerHTML = '<i class="fa-solid fa-infinity text-indigo-500"></i> <span id="game-timer-display">Sin límite</span>';
+                }
+                return;
+            }
+
+            if (badge) {
+                badge.innerHTML = '<i class="fa-solid fa-stopwatch text-amber-600"></i> <span id="game-timer-display">15:00</span>';
+            }
+            state.timeLeftSeconds = state.selectedMinutes * 60;
             updateTimerDisplay();
             state.timerInterval = setInterval(() => {
                 if (state.phase === 'ENDED') {
@@ -668,6 +619,7 @@
         }
 
         function updateTimerDisplay() {
+            if (!state.isTimedGame) return;
             const mins = Math.floor(Math.max(0, state.timeLeftSeconds) / 60);
             const secs = Math.max(0, state.timeLeftSeconds) % 60;
             const display = document.getElementById('game-timer-display');
@@ -685,38 +637,12 @@
         }
 
         function endGameByTimeLimit() {
+            stopQuestionTimer();
             state.phase = 'ENDED';
-            const qModal = document.getElementById('question-modal');
-            if (qModal) {
-                qModal.classList.add('hidden');
-                qModal.classList.remove('flex');
-            }
-            const btnRoll = document.getElementById('btn-roll');
-            if (btnRoll) {
-                btnRoll.disabled = true;
-                btnRoll.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-
-            // Ordenar por puntos totales (desempate por número de quesitos)
-            const sorted = [...state.players].sort((a, b) => {
-                if (b.points !== a.points) return b.points - a.points;
-                return b.wedges.length - a.wedges.length;
-            });
-
-            const topScore = sorted[0].points;
-            const topWedges = sorted[0].wedges.length;
-            const winners = sorted.filter(p => p.points === topScore && p.wedges.length === topWedges);
-
-            const rankingHTML = sorted.map((p, idx) =>
-                `<div class="flex justify-between items-center text-sm py-1.5 px-3 rounded-xl ${idx === 0 ? 'bg-amber-50 font-bold text-amber-950' : 'text-slate-600'}">
-                    <span>${idx + 1}. ${p.name}</span>
-                    <span>${p.points} pts · ${p.wedges.length} ★</span>
-                </div>`
-            ).join('');
-
+// ... existing code ... -->
             const titleText = winners.length > 1
-                ? `¡Se acabaron los 15 minutos! Empate en cabeza entre <strong>${winners.map(w => w.name).join(' y ')}</strong> con <strong>${topScore} puntos</strong>.`
-                : `¡Se acabaron los 15 minutos! Gana <strong>${winners[0].name}</strong> con <strong>${topScore} puntos</strong> y ${topWedges} quesito(s).`;
+                ? `¡Se acabó el tiempo (${state.selectedMinutes} min)! Empate en cabeza entre <strong>${winners.map(w => w.name).join(' y ')}</strong> con <strong>${topScore} puntos</strong>.`
+                : `¡Se acabó el tiempo (${state.selectedMinutes} min)! Gana <strong>${winners[0].name}</strong> con <strong>${topScore} puntos</strong> y ${topWedges} quesito(s).`;
 
             document.getElementById('winner-text').innerHTML = `
                 <p class="mb-4">${titleText}</p>
@@ -1113,205 +1039,90 @@
             const modal = document.getElementById('question-modal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+
+            // Iniciar cuenta atrás de 15 segundos para responder
+            startQuestionTimer();
         }
 
-        function checkAnswer(selectedIdx) {
+        function startQuestionTimer() {
+            stopQuestionTimer();
+            state.questionTimeLeft = 15;
+            updateQuestionTimerUI();
+
+            state.questionTimerInterval = setInterval(() => {
+                if (state.phase !== 'QUESTION') {
+                    stopQuestionTimer();
+                    return;
+                }
+                state.questionTimeLeft--;
+                updateQuestionTimerUI();
+
+                if (state.questionTimeLeft <= 0) {
+                    stopQuestionTimer();
+                    handleQuestionTimeout();
+                }
+            }, 1000);
+        }
+
+        function stopQuestionTimer() {
+            if (state.questionTimerInterval) {
+                clearInterval(state.questionTimerInterval);
+                state.questionTimerInterval = null;
+            }
+        }
+
+        function updateQuestionTimerUI() {
+            const secEl = document.getElementById('q-timer-seconds');
+            const barEl = document.getElementById('q-timer-bar');
+            const pillEl = document.getElementById('q-timer-pill');
+            if (secEl) secEl.textContent = `${Math.max(0, state.questionTimeLeft)}s`;
+            if (barEl) {
+                const pct = (Math.max(0, state.questionTimeLeft) / 15) * 100;
+                barEl.style.width = `${pct}%`;
+                barEl.className = state.questionTimeLeft <= 5
+                    ? 'h-full bg-rose-500 transition-all duration-1000 ease-linear'
+                    : 'h-full bg-amber-400 transition-all duration-1000 ease-linear';
+            }
+            if (pillEl) {
+                pillEl.className = state.questionTimeLeft <= 5
+                    ? 'px-3 py-1 rounded-full bg-rose-600 text-white font-game text-sm flex items-center gap-1.5 border border-rose-300 animate-pulse'
+                    : 'px-3 py-1 rounded-full bg-black/25 text-white font-game text-sm flex items-center gap-1.5 border border-white/25';
+            }
+        }
+
+        function handleQuestionTimeout() {
             const q = state.currentQuestion;
-            const cell = state.currentCell;
-            const player = state.players[state.currentPlayerIdx];
-            const isCorrect = selectedIdx === q.answer;
+            if (!q) return;
 
             const buttons = document.querySelectorAll('.q-opt-btn');
             buttons.forEach((btn, idx) => {
                 btn.disabled = true;
                 if (idx === q.answer) {
                     btn.className = 'q-opt-btn w-full text-left p-3.5 rounded-2xl border-2 border-emerald-500 bg-emerald-50 font-bold text-emerald-900 flex items-center gap-3';
-                } else if (idx === selectedIdx && !isCorrect) {
-                    btn.className = 'q-opt-btn w-full text-left p-3.5 rounded-2xl border-2 border-rose-500 bg-rose-50 font-bold text-rose-900 flex items-center gap-3';
                 } else {
                     btn.className = 'q-opt-btn w-full text-left p-3.5 rounded-2xl border-2 border-slate-100 bg-slate-50 text-slate-400 flex items-center gap-3 opacity-60';
                 }
             });
+
+            state.turnStreak = 0;
+            state._lastAnswerCorrect = false;
+            state._streakCompletedPass = false;
+            playSound('wrong');
 
             const feedback = document.getElementById('q-feedback');
             const fTitle = document.getElementById('q-feedback-title');
             const fExp = document.getElementById('q-feedback-explanation');
 
             feedback.classList.remove('hidden');
-            state._lastAnswerCorrect = isCorrect;
-            state._streakCompletedPass = false;
-
-            if (isCorrect) {
-                state.turnStreak++;
-                let gotNewWedge = false;
-                if (cell.isWedge && !player.wedges.includes(cell.subjectId)) {
-                    player.wedges.push(cell.subjectId);
-                    player.points += 2; // Quesito vale 2 puntos
-                    gotNewWedge = true;
-                    playSound('wedge');
-                } else {
-                    player.points += 1; // Acierto normal vale 1 punto
-                    playSound('correct');
-                }
-
-                // Comprobar si alcanzó el máximo de 5 tiradas acertadas seguidas
-                let gotStreakBonus = false;
-                if (state.turnStreak >= 5) {
-                    player.points += 1; // +1 punto extra por completar 5 aciertos seguidos
-                    gotStreakBonus = true;
-                    state._streakCompletedPass = true;
-                    playSound('wedge');
-                }
-
-                feedback.className = 'p-4 rounded-2xl mb-2 bg-emerald-100/80 border border-emerald-300 text-emerald-950';
-                if (gotStreakBonus) {
-                    fTitle.innerHTML = `<i class="fa-solid fa-fire text-orange-500"></i> ¡5 de 5 seguidas! Ganas <strong>+1 punto extra</strong>${gotNewWedge ? ` y el quesito de ${SUBJECTS[cell.subjectId].short}` : ''}. Pasa el turno.`;
-                } else if (gotNewWedge) {
-                    fTitle.innerHTML = `<i class="fa-solid fa-star text-amber-500"></i> ¡Correcto! Quesito de ${SUBJECTS[cell.subjectId].short} (+2 pts). Racha: ${state.turnStreak}/5.`;
-                } else {
-                    fTitle.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> ¡Muy bien! (+1 pt · Racha ${state.turnStreak}/5). Vuelves a tirar.`;
-                }
-            } else {
-                state.turnStreak = 0;
-                playSound('wrong');
-                feedback.className = 'p-4 rounded-2xl mb-2 bg-rose-100/80 border border-rose-300 text-rose-950';
-                fTitle.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600"></i> ¡Casi! Pasa el turno al siguiente jugador.`;
-            }
-
+            feedback.className = 'p-4 rounded-2xl mb-2 bg-rose-100/80 border border-rose-300 text-rose-950';
+            fTitle.innerHTML = `<i class="fa-solid fa-hourglass-end text-rose-600"></i> ¡Se acabaron los 15 segundos! Pasa el turno al siguiente jugador.`;
             fExp.textContent = q.explanation || '';
+
             renderScoreboard();
             updateStreakBadge();
         }
 
-        function closeQuestionModal() {
-            const modal = document.getElementById('question-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-
-            if (state.phase === 'ENDED') return;
-
-            const player = state.players[state.currentPlayerIdx];
-
-            // Comprobar si el jugador ha conseguido todos los quesitos activos
-            if (player.wedges.length >= state.activeSubjects.length) {
-                stopGameTimer();
-                state.phase = 'ENDED';
-                document.getElementById('winner-text').innerHTML = `<strong>${player.name}</strong> ha conseguido todos los quesitos de 5º de Primaria con <strong>${player.points} puntos</strong>. ¡Campeón/a!`;
-                const vModal = document.getElementById('victory-modal');
-                vModal.classList.remove('hidden');
-                vModal.classList.add('flex');
-                playSound('wedge');
-                return;
-            }
-
-            // Pasa el turno si falló O si completó las 5 tiradas seguidas acertadas
-            if (!state._lastAnswerCorrect || state._streakCompletedPass) {
-                state.turnStreak = 0;
-                state._streakCompletedPass = false;
-                state.currentPlayerIdx = (state.currentPlayerIdx + 1) % state.players.length;
-            }
-
-            state.phase = 'ROLL';
-            const btnRoll = document.getElementById('btn-roll');
-            btnRoll.disabled = false;
-            btnRoll.classList.remove('opacity-50', 'cursor-not-allowed');
-            updateTurnUI();
-            renderScoreboard();
-        }
-
-        /* ==========================================================================
-           9. ACTUALIZACIÓN DE INTERFAZ (MARCADOR, LEYENDA Y TURNO)
-           ========================================================================== */
-        function updateStreakBadge() {
-            const badge = document.getElementById('streak-badge');
-            if (badge) {
-                badge.innerHTML = `<i class="fa-solid fa-fire text-orange-500"></i> Racha: ${state.turnStreak}/5`;
-            }
-        }
-
-        function updateTurnUI() {
-            const player = state.players[state.currentPlayerIdx];
-            if (!player) return;
-
-            const banner = document.getElementById('current-player-banner');
-            banner.style.background = player.color;
-            document.getElementById('current-player-avatar').textContent = player.id + 1;
-            document.getElementById('current-player-name').textContent = player.name;
-            document.getElementById('game-status-text').textContent = '¡Tira el dado para avanzar!';
-            updateStreakBadge();
-        }
-
-        function renderScoreboard() {
-            const container = document.getElementById('players-scoreboard');
-            container.innerHTML = '';
-
-            state.players.forEach((p, idx) => {
-                const isCurrent = idx === state.currentPlayerIdx;
-                const wedgesHTML = state.activeSubjects.map(subjId => {
-                    const subj = SUBJECTS[subjId];
-                    const earned = p.wedges.includes(subjId);
-                    return `
-                        <span title="${subj.name}" class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] border ${earned ? 'text-white shadow-sm' : 'bg-slate-100 text-slate-300 border-slate-200'}" style="${earned ? `background:${subj.color}; border-color:${subj.color};` : ''}">
-                            <i class="fa-solid ${earned ? 'fa-star' : subj.icon}"></i>
-                        </span>
-                    `;
-                }).join('');
-
-                container.innerHTML += `
-                    <div class="p-3 rounded-2xl border-2 transition ${isCurrent ? 'border-indigo-400 bg-indigo-50/40 shadow-sm' : 'border-slate-100 bg-slate-50/60'}">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-lg text-white text-xs font-bold flex items-center justify-center" style="background:${p.color}">${p.id + 1}</span>
-                                <span class="font-bold text-sm text-slate-800">${p.name}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-extrabold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">${p.points} pts</span>
-                                <span class="text-xs font-bold text-slate-500">${p.wedges.length}/${state.activeSubjects.length} ★</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            ${wedgesHTML}
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function renderLegend() {
-            const container = document.getElementById('subjects-legend');
-            container.innerHTML = '';
-            let totalLoaded = 0;
-            let totalRemaining = 0;
-
-            state.activeSubjects.forEach(subjId => {
-                const subj = SUBJECTS[subjId];
-                const pool = getSubjectQuestions(subjId);
-                const count = pool.length;
-                const seenCount = (state.seenQuestions[subjId] || []).length;
-                const remaining = Math.max(0, count - seenCount);
-                totalLoaded += count;
-                totalRemaining += remaining;
-
-                container.innerHTML += `
-                    <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-100">
-                        <div class="flex items-center gap-2">
-                            <span class="w-6 h-6 rounded-lg flex items-center justify-center text-white text-xs shrink-0" style="background:${subj.color}">
-                                <i class="fa-solid ${subj.icon}"></i>
-                            </span>
-                            <span class="text-xs font-bold text-slate-700">${subj.name}</span>
-                        </div>
-                        <span class="text-[11px] font-semibold text-slate-500" title="Preguntas sin salir / Total">${remaining}/${count}</span>
-                    </div>
-                `;
-            });
-
-            document.getElementById('total-questions-badge').textContent = `${totalRemaining}/${totalLoaded} disp.`;
-        }
-
-        // Inicializar al cargar la página
-        window.addEventListener('DOMContentLoaded', () => {
-            initConfigUI();
-        });
-    </script>
-</body>
-</html>
+        function checkAnswer(selectedIdx) {
+            stopQuestionTimer();
+            const q = state.currentQuestion;
+// ... existing code ... -->
